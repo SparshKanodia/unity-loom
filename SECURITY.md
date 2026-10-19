@@ -87,9 +87,9 @@ force are:
 
 | Control | Where it lives |
 |---|---|
-| `main` is protected by a ruleset: pull request only, one code-owner approval, required status checks, no force-push, no branch deletion, linear history | GitHub repository settings |
-| Only the maintainer can bypass the ruleset | GitHub repository settings |
-| Release tags must be signed | GitHub repository settings |
+| `main` is protected: pull request only, one code-owner approval, required status checks, no force-push, no branch deletion, linear history, signed commits | GitHub repository settings |
+| The tip commit on `main` is checked for a verified signature after every push | [.github/workflows/ci.yml](.github/workflows/ci.yml) |
+| Release tags must be signed, and the tag ruleset has no bypass | GitHub repository settings |
 | Every CI action is pinned to a full commit SHA | [.github/workflows/ci.yml](.github/workflows/ci.yml) |
 | No secret is reachable from a pull-request run | [.github/workflows/ci.yml](.github/workflows/ci.yml) |
 | The token is read-only everywhere except the release job, and the checkout does not persist it | [.github/workflows/ci.yml](.github/workflows/ci.yml) |

@@ -351,6 +351,46 @@ jobs:
           GITLEAKS_ENABLE_COMMENTS: "false"
           GITLEAKS_ENABLE_SUMMARY: "true"
 
+  # ----------------------------------------------------------------- signature
+  signature:
+    name: signature
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only a push to `main`. This job is the enforcement that survives the
+    # administrator bypass: an administrator may merge without a review, so
+    # the commit that lands on `main` is checked here instead.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Verify the signature of the tip commit
+        # The branch protection requires signed commits, and GitHub accepts a
+        # signature only when it can verify it. A key that is registered for
+        # authentication but not as a signing key produces a signature
+        # GitHub reports as `unknown_key`, which does not satisfy the rule.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          verification="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}" --jq '.commit.verification')"
+          verified="$(printf '%s' "$verification" | jq -r '.verified')"
+          reason="$(printf '%s' "$verification" | jq -r '.reason')"
+          signer="$(printf '%s' "$verification" | jq -r '.signature | if . == null then "none" else "present" end')"
+          if [ "$verified" != "true" ]; then
+            echo "The tip commit ${sha} is not signed with a verified signature." >&2
+            echo "  verification reason: ${reason}" >&2
+            echo "  signature: ${signer}" >&2
+            echo "Register the signing key on the account, or merge through a pull request." >&2
+            exit 1
+          fi
+          echo "The tip commit ${sha} carries a verified signature (${reason})."
+
   # -------------------------------------------------------------- editor-tests
   editor-tests:
     name: editor-tests

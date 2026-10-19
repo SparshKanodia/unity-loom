@@ -71,8 +71,8 @@ repository is public and the history is permanent).
 | Risk | Why it is accepted | What limits it |
 |---|---|---|
 | A pull request's code runs on the CI runner | The validator and the installer have to run somewhere, and running them in a pull request is the only way the check means anything | The runner is ephemeral, the token is read-only and not persisted, no secret is reachable, and the job has no network egress beyond the runner image |
-| The owner self-approves their own pull request | A single-maintainer repository has exactly one reviewer, so a second reviewer does not exist | The approval requirement still forces a pull request, a green build, a recorded review and an audit trail; the alternative is no changes at all |
-| The owner bypasses a signed-commit requirement in one place | Requiring signatures of every external contributor would block most of them | Signatures are required on `main` and on release tags; the owner's own commits are signed with a key registered on the account |
+| The owner merges their own pull request | A single-maintainer repository has exactly one reviewer, and GitHub does not let the author approve their own pull request. Requiring a second approval would mean no change could ever be merged | The administrator bypass is explicit rather than silent: the pull request, the green build, the recorded review and the audit trail all still exist, and the tip commit on `main` is separately checked for a verified signature by the `signature` job |
+| The owner bypasses the signed-commit requirement in one place | Requiring signatures of every external contributor would block most of them | The `signature` job fails the build on `main` when the tip commit is not verifiably signed, and the release-tag ruleset has no bypass at all, so a release is always a signed tag |
 | The corpus is instructions, and instructions are hard to lint | The validator can check structure, not intent | The corpus is reviewed as code, by a code owner, under the same rules as the tooling |
 
 ## 6. Verification
@@ -114,7 +114,7 @@ here. A value that differs from this table is drift.
 | Require the last push to be approved | No (see §5) |
 | Require conversation resolution | Yes |
 | Require signed commits | Yes |
-| Enforce for administrators | Yes |
+| Enforce for administrators | No — the owner is the only administrator, and GitHub does not let the author approve their own pull request. The `signature` job in CI is what enforces a signed tip commit on `main` instead |
 | Require linear history | Yes |
 | Allow force pushes | No |
 | Allow deletions | No |

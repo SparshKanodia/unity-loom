@@ -20,23 +20,23 @@ Work [workflows/2d.md](../../workflows/2d.md) in order. API facts live in [refer
 
 | Need | Choose | Default |
 |---|---|---|
-| Many sprites in one scene | Sprite Atlas | one atlas per scene or character |
-| Repeating grid geometry | Tilemap | visual tilemap plus a separate collision tilemap |
+| Many sprites in one scene | Sprite Atlas | one atlas per scene or character (C-088) |
+| Repeating grid geometry | Tilemap | visual tilemap plus a separate collision tilemap (C-089) |
 | Still art | Static sprite | renderer only, no script |
 | Moving art | Animated sprite | Animator clip, or a code-driven sprite swap |
 | Player or camera-controlled motion | Kinematic Rigidbody2D | `MovePosition` with interpolation |
 | Pushed, thrown or stacked | Dynamic Rigidbody2D | physics drives it, interpolation on |
-| Level geometry | No Rigidbody2D | collider only, or a composite collider |
+| Level geometry | No Rigidbody2D | collider only, or a composite collider (C-090) |
 | Scene lighting | Baked lightmap | `Light2D` only where it is dynamic and budgeted |
 | Panels and frames | 9-slice sprite | sliced sprite, never stretched art |
 
 Symptom → move:
 
-- Blurry or jittering art → constant PPU, point filter, no compression, integer zoom, camera snapped to the grid.
+- Blurry or jittering art → constant PPU, point filter, no compression, integer zoom, camera snapped to the grid (C-113).
 - Too many draw calls → one atlas per scene, same-atlas sprites adjacent, confirm in the frame debugger.
-- Greedy collision → separate visual and collision tilemaps, merged into one `CompositeCollider2D`, no rigidbody on static tiles.
+- Greedy collision → separate visual and collision tilemaps, merged into one `CompositeCollider2D` (C-090), no rigidbody on static tiles.
 - Falls through at speed → continuous detection on the fast body, or raycast movement.
-- Detection → `Physics2D.OverlapCircle` with a preallocated results array, never the allocating overload.
+- Detection → `Physics2D.OverlapCircle` (C-120) through the non-alloc form, with a reused buffer (C-004).
 
 ## Setup defaults
 
@@ -48,11 +48,11 @@ Encode these in an `AssetPostprocessor` so they are reproducible.
 | Filter mode | Point for pixel art, Bilinear otherwise | importer |
 | Compression | none for pixel art, platform format otherwise (C-043) | per platform |
 | Sprite mode, mesh type | Single + Full Rect for pixel art, Multiple + Tight otherwise | importer |
-| Sprite atlas | one per scene or character, variants for palette swaps | `com.unity.2d.sprite` |
-| Tilemap chunk size | 16 on the 2D Renderer asset | URP 2D Renderer |
-| Collision geometry | separate collision tilemap merged by a `CompositeCollider2D` | scene |
+| Sprite atlas | one per scene or character, variants for palette swaps | `com.unity.2d.sprite` (C-088) |
+| Tilemap chunk size | 16 on the 2D Renderer asset | URP 2D Renderer (C-089) |
+| Collision geometry | separate collision tilemap merged by a `CompositeCollider2D` | scene (C-090) |
 | Rigidbody2D type | Dynamic pushed, Kinematic moved, none for level geometry | component |
-| Pixel perfect | `PixelPerfectCamera`, assetsPPU equal to sprite PPU | URP |
+| Pixel perfect | `PixelPerfectCamera`, assetsPPU equal to sprite PPU | URP (C-113) |
 | Sorting | one sorting layer per role, order in layer for detail | settings |
 | Batching | same atlas, same material, adjacent order | frame debugger |
 
@@ -104,7 +104,7 @@ public sealed class PlayerController2D : MonoBehaviour
 }
 ```
 
-Tilemap query — the 6000.3 API has no static per-cell lookup, so resolve the component once and reuse it.
+Tilemap query — `Tilemap.GetTile` is an instance method, so resolve the component once and reuse it (C-112).
 ```csharp
 public sealed class TileQuery : MonoBehaviour
 {
@@ -140,7 +140,9 @@ private void OnDestroy()
 }
 ```
 
-Pixel perfect — `PixelPerfectCamera` ships with the URP 2D Renderer; the standalone 2D Pixel Perfect package targets Built-in. Set `assetsPPU` to the sprite PPU, the reference resolution to the art size, and pixel snapping on.
+Runtime sprite — `Sprite.Create` builds a Sprite at runtime (C-114); it never replaces an atlas.
+
+Pixel perfect — `PixelPerfectCamera` keeps pixel art crisp and stable at different resolutions (C-113). Set `assetsPPU` to the sprite PPU, the reference resolution to the art size, and pixel snapping on.
 
 ## Red lines
 

@@ -1,6 +1,6 @@
 # Doctrine 02 — Capabilities & Adapters
 
-The core needs **nothing but a text editor**. Other capabilities are optional tiers, *detected*, never assumed. Adapters: `references/adapters.md`.
+The core needs **nothing but a text editor**. Other capabilities are optional tiers, *detected*, never assumed. See [references/adapters.md](../references/adapters.md).
 
 ## 1. Tiers
 
@@ -21,10 +21,10 @@ Probe the highest tier first, then descend. Every probe is read-only.
 |---|---|---|---|---|---|
 | T3 | `adb devices` | a device id listed | empty list, command missing | 20 s | T2 |
 | T3 | `xcrun xctrace list devices` | a simulator/device id | empty list, command missing | 20 s | T2 |
-| T2 | bridge health/session call | session id + project path | "no session", transport error | 15 s | T1 |
-| T1 | `unity --version` | a version string on stdout | non-zero exit, "not found" | 10 s | T0 |
+| T2 | bridge health/session call | session id + project path | "no session" or transport error | 15 s | T1 |
+| T1 | `unity --version` | a version string on stdout | non-zero exit or "not found" | 10 s | T0 |
 | T1 | `unity status` | a running Editor or project | no editor reported | 15 s | T0 |
-| T0 | read a file under the project root | path exists, is writable | path missing, read-only | 5 s | report only |
+| T0 | read a file under the project root | path exists, is writable | path missing or read-only | 5 s | report only |
 
 Never guess a tier. A probe that errors, parses to nothing, or times out is **absent**.
 
@@ -96,7 +96,4 @@ Fallback if the editor closes: T1 (unity CLI present)
 - A tier is a *means*, not a goal: pick the lowest tier that suffices.
 - Live editor state needs T2; T1 and T0 substitute a build or diff.
 - Device truth needs T3; below it the answer is a model, not a fact.
-- Prefer the cheapest probe that yields the evidence needed.
-- If neither tier yields the evidence, name what is missing.
 - Report the tier with the answer, not before it.
-- A tier that answers for another target is not your tier.

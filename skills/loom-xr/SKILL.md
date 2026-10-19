@@ -63,7 +63,7 @@ user's head; comfort is functional (C-027).
 - Smooth with `Time.deltaTime`; `Time.unscaledDeltaTime` only where the timescale must not apply.
 - Never `Instantiate` inside an interaction event; pool or prewarm.
 - Non-alloc physics queries only (C-004).
-- Frame budget: the project declares a target refresh rate; the budget is its reciprocal — 72 Hz gives about 13.9 ms, 90 Hz about 11.1 ms. Read it off the device profile, not from memory.
+- Frame budget: the project declares a target refresh rate; the budget is its reciprocal — 72 Hz gives about 13.9 ms, 90 Hz about 11.1 ms. Read it off the device profile.
 
 ## IDIOMATIC EXAMPLES
 
@@ -166,8 +166,8 @@ public sealed class Placer : MonoBehaviour
 - No per-frame GC in an XR hot path.
 - No un-anchored AR/MR content (C-026).
 - No 1:1 scale violation in MR.
-- Never destroy an object while it is selected.
-- No dead input after a pause or system menu.
+- Never destroy an object while selected.
+- No dead input after a pause.
 - No shipping without comfort settings (ADR-0006).
 - No shipping without a clean validation run.
 
@@ -187,5 +187,5 @@ public sealed class Placer : MonoBehaviour
 - Pause via the system menu, resume, and input still selects with feedback.
 - Every comfort setting changes behaviour; the default is comfortable.
 - AR/MR error states handled: permission denied, unsupported, tracking lost.
-- Placed content stays anchored across movement and app resume.
+- Placed content stays anchored across movement and resume.
 - `Done when` from [xr.md](../../workflows/xr.md) is satisfied.

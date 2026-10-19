@@ -22,18 +22,18 @@ Work [workflows/simulation.md](../../workflows/simulation.md). This domain is ab
 - **What is assessed?** → a knowledge check, procedural scoring, a demonstrated skill, or analytics only — never both.
 - **Delivery standard?** → xAPI (statements to a Learning Record Store, C-060); SCORM 2004 for a packaged course; SCORM 1.2 for legacy portals; custom last.
 - **Step authoring?** → linear for a fixed sequence, a branched tree when the learner chooses, free practice when the score comes from doing.
-- **CAD content?** → import as data: units → axes → scale → decimate → LOD → Addressables, each stage gated.
+- **CAD content?** → import as data: units → axes → scale (C-119) → decimate → LOD (C-091) → Addressables (C-007), each stage gated.
 - **Scoring, offline, identity?** → discrete events only, never rendered state (C-061); queue statements and flush on reconnect; the learner is an opaque LMS id.
 
 ## Setup defaults
 
 | Area | Default |
 |---|---|
-| Procedure model | one `ScriptableObject` per procedure; steps are `[Serializable]` types with `SerializeReference` subclasses, with success, failure, resume |
+| Procedure model | one `ScriptableObject` per procedure (C-076); steps are `[Serializable]` types with `SerializeReference` subclasses (C-175), with success, failure, resume |
 | Events and scoring | one table of verb and object ids across devices; every event carries a stable id and a monotonic clock; per-step weights, a critical-fail flag, the best attempt per step, a fixed-order total; attempt state persists in a versioned local record |
 | Identity and retention | an opaque LMS id, never a name or email; a retention period and a deletion path |
 | Offline and consent | an append-only queue that survives a restart and flushes in order, behind an explicit opt-in |
-| Delivery | xAPI actor = learner id, verb = event verb, object = step id; SCORM 2004 one manifest, one SCO per procedure, `success` from the score |
+| Delivery | xAPI actor = learner id, verb = event verb, object = step id (C-104); SCORM: one package, one SCO per procedure, `success` from the score |
 | Digital twin and authoring | every CAD and IoT feed carries units, coordinate frame and sample time; a unit mismatch fails the import; instructors edit data, analytics aggregate server-side |
 
 ## Idiomatic examples
@@ -59,7 +59,7 @@ public sealed class StepDefinition : ScriptableObject
     [SerializeField] string stepId;
     [SerializeField] float weight = 1f;
     [SerializeField] bool critical;
-    [SerializeReference] StepBehaviour behaviour;
+    [SerializeReference] StepBehaviour behaviour;   // C-175
 }
 ```
 
@@ -93,6 +93,7 @@ public static class XapiStatement
 {
     public static string Build(string actorId, string verbId, string activityId, string timestamp)
     {
+        // actor, verb and object are the required parts of a statement (C-104)
         return "{\"actor\":{\"objectType\":\"Agent\",\"name\":\"" + actorId + "\"},"
              + "\"verb\":{\"id\":\"" + verbId + "\"},\"object\":{\"id\":\"" + activityId + "\"},"
              + "\"timestamp\":\"" + timestamp + "\"}";
@@ -109,7 +110,7 @@ public sealed class StatementQueue
 }
 ```
 
-Escape interpolated values; use a JSON serializer.
+Escape interpolated values; use a JSON serializer. The result and the context of a statement are optional (C-155). Keep the queue file under `Application.persistentDataPath` (C-177).
 
 ### A CAD import verification gate
 
@@ -136,7 +137,7 @@ public static class CadGate
 - No non-deterministic scoring: the same input always gives the same score.
 - No telemetry without consent and a working opt-out.
 - No learner data, name, email or credential in the client.
-- No hard-coded LMS or LRS endpoint in the build; read it from configuration.
+- No hard-coded LMS or LRS endpoint in the build; read it from configuration (C-060).
 - No unscaled or unit-ambiguous CAD geometry.
 - No network call that blocks the simulation loop.
 

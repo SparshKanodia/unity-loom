@@ -25,11 +25,11 @@ picks the pattern.
 | Wiring services | Composition | plain C# objects, refs serialized, built by one root | ADR-0002 |
 | Two systems, no owner | Event channel | ScriptableObject channel asset | ADR-0002 |
 | Many unrelated fans | Thin bus | one typed bus, explicit lifetime | ADR-0002 |
-| Designer-authored data | ScriptableObject asset | read-only at runtime | workflow foundation |
+| Designer-authored data | ScriptableObject asset | read-only at runtime | C-076, workflow foundation |
 | Service before any ref exists | Service locator | static registry, not mutable state | ADR-0002 |
 | Modes of behaviour | State machine | enum + strategy, class FSM when it grows | workflow foundation |
-| Multiplayer | Networked state | NGO `NetworkBehaviour`, minimal sync | package docs |
-| Any I/O | Async | `Awaitable` + `CancellationToken` | ADR-0003 |
+| Multiplayer | Networked state | NGO `NetworkBehaviour`, minimal sync | C-101, package docs |
+| Any I/O | Async | `Awaitable` + `CancellationToken` | ADR-0003, C-005 |
 | Runtime assets | Addressables | load and release explicitly | ADR-0001, C-007 |
 
 Which pattern do I need?
@@ -41,6 +41,8 @@ Which pattern do I need?
 - Progress that survives a restart → versioned payload, one writer.
 - Modes with entry and exit rules → explicit state machine.
 - Networked → settle transport and authority before gameplay code.
+- Save files live under `Application.persistentDataPath` (C-177).
+- A `NetworkObject` does not exist on clients until the network system spawns it (C-152).
 
 ## Architecture defaults
 
@@ -48,7 +50,7 @@ Which pattern do I need?
 |---|---|---|
 | Assemblies | Core, Runtime, Editor, Tests; references point one way | one asmdef per folder |
 | Cycles | none; Runtime never references Editor or Tests | dependency check |
-| Serialization | private `[SerializeField]`; `[SerializeReference]` for polymorphic data | component fields |
+| Serialization | private `[SerializeField]`; `[SerializeReference]` for polymorphic data | component fields (C-175) |
 | Events | channel assets before any bus | `ScriptableObjects/Channels` |
 | Authored data | `[CreateAssetMenu]` assets, never mutated at runtime | `ScriptableObjects` |
 | Save format | `schema` int plus one migration step per version | `Scripts/Core/Save` |
@@ -112,14 +114,14 @@ public async Awaitable<GameObject> LoadAsync(string key, CancellationToken token
 {
     var handle = Addressables.LoadAssetAsync<GameObject>(key);
     while (!handle.IsDone)
-        await Awaitable.NextFrameAsync(token);          // ADR-0003
+        await Awaitable.NextFrameAsync(token);          // ADR-0003, C-072
     if (handle.Status != AsyncOperationStatus.Succeeded)
         throw new System.InvalidOperationException(key);
     return handle.Result;
 }
 ```
 
-Pass `destroyCancellationToken` so an unload cancels the wait; release the handle in `OnDestroy`.
+Cancel the wait when the owner is destroyed, and release the handle exactly once.
 
 Area check without per-call allocation (C-004).
 ```csharp
@@ -158,13 +160,14 @@ Scripts/Tests/{EditMode,PlayMode}
 
 ## Red lines
 
-- No `Resources` at runtime, and no `Resources.Load` in a hot path (ADR-0001).
+- No `Resources` at runtime, and no `Resources.Load` in a hot path (ADR-0001, C-007).
 - No global mutable singletons (ADR-0002).
 - No `async void`, and no second async library (ADR-0003).
 - No assembly cycles, and no Runtime to Editor reference.
 - No unversioned save payload.
 - No secrets in the project (see [doctrine/01-safety.md](../../doctrine/01-safety.md)).
 - No hard-coded scene paths; resolve scenes by name or label.
+- No secret in `PlayerPrefs`: it is stored unencrypted (C-102).
 - No `GameManager` holding game logic; split and compose (ADR-0002).
 
 ## Verify

@@ -42,7 +42,7 @@ Precondition: run once per project, before any gameplay code.
 
 - [ ] `git init`, then commit the untouched template as commit zero.
 - [ ] Add the generated folders to `.gitignore`.
-- [ ] Set meta files visible and asset serialization to force text.
+- [ ] Keep meta files visible and asset serialization in text, so every diff stays readable.
 - [ ] Commit the whole `ProjectSettings/` folder, and keep it as the
       reference snapshot of the settings.
 - [ ] Track binary art and audio through LFS.
@@ -112,7 +112,7 @@ Assets/
 - [ ] Commit `Packages/manifest.json` and `Packages/packages-lock.json`.
 - [ ] Copy the pinned set into `docs/project-versions.md`.
 - [ ] Choose the render pipeline asset once and never mix pipelines.
-- [ ] Add Addressables for anything loaded at runtime (ADR-0001).
+- [ ] Add Addressables for anything loaded at runtime (ADR-0001, C-007).
 - [ ] Remove the template modules the project will not use.
 - [ ] Add only the package set the chosen domain workflow needs.
 - [ ] Verify the pipeline against the pinned package version before coding.
@@ -122,14 +122,15 @@ Assets/
 | Editor version | `docs/project-versions.md` | one line, exact build |
 | Package set | `Packages/manifest.json` | explicit versions, no ranges |
 | Lock file | `Packages/packages-lock.json` | committed, never edited by hand |
-| Pipeline asset | `Assets/Settings/` | one asset, chosen in phase 1 |
+| Pipeline asset | `Assets/Settings/` | one asset, chosen in phase 1 (C-078) |
 
 - **Gate:** a clean build of the template succeeds for the primary target.
 
 ## Phase 5 — Architecture backbone
 
-- [ ] Model authored data as ScriptableObjects, not scene fields.
+- [ ] Model authored data as ScriptableObjects, not scene fields (C-076).
 - [ ] Write the save format as versioned data with a migration path.
+- [ ] Put the saved payload under `Application.persistentDataPath` (C-177).
 - [ ] Choose the communication pattern: references, then event channels, then
       a bus only when the fan-out is real (ADR-0002).
 - [ ] Use `Awaitable` for engine async work (ADR-0003, C-005).
@@ -147,9 +148,9 @@ Assets/
 
 ## Phase 6 — Automation
 
-- [ ] Add CI with the stages: validate, test, build, upload.
+- [ ] Add CI with the stages: validate, test, build, upload, using the community GameCI actions (C-053).
 - [ ] Invoke tests per tier (ADR-0011) and record which one CI uses.
-- [ ] Create build profiles for dev and release (C-051).
+- [ ] Create build profiles for dev and release (C-051, C-142).
 - [ ] Archive a build manifest: commit, editor version, package versions.
 - [ ] Cache the import cache so CI stays fast but reproducible.
 
@@ -186,11 +187,11 @@ jobs:
 | Active input handling | New Input System | actions never fire, or old calls break |
 | Physics mode | 3D or 2D, never both | gravity on the wrong axis, lost contacts |
 | Layer collision matrix | only pairs that interact | wasted solver work, false collisions |
-| Quality levels | one per platform, set in the profile | a device silently runs the wrong tier |
-| Scripting backend | IL2CPP for shipping (C-052) | large builds, AOT surprises |
-| Managed stripping | low in dev, higher in release | types missing at runtime |
-| Frame rate vs vSync | set one, never both | the frame cap is ignored on desktop |
-| Render pipeline asset | URP, chosen once (C-013) | mixed renderers, broken batching |
+| Quality levels | one per platform, set in the profile (C-142) | a device silently runs the wrong tier |
+| Scripting backend | IL2CPP for shipping (C-052, C-100) | large builds, AOT surprises |
+| Managed stripping | low in dev, higher in release (C-146, C-147) | types missing at runtime |
+| Frame rate vs vSync | set one, never both (C-074) | the frame cap is ignored on desktop |
+| Render pipeline asset | URP, chosen once (C-013, C-078) | mixed renderers, broken batching |
 
 ## Do not do yet
 

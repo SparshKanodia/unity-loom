@@ -36,10 +36,11 @@ Router role: pick the release kind, apply the defaults, then run [workflows/rele
 |---|---|---|
 | Editor + packages | Pinned in manifest + lock, copied to the build manifest | ADR-0004 |
 | Tooling CLI | Latest agent tooling, version logged per run | ADR-0004 |
-| Build profiles | `dev`, `internal`, `store`, defines per profile | C-051 |
-| Scripting backend | IL2CPP for shipping; Mono only where AOT is impossible | C-052 |
-| Managed stripping | `Minimal` until a device test proves a higher level | C-052 |
-| Reflection under IL2CPP | Preserve each reflected type, then prove on device | C-052 |
+| Build profiles | `dev`, `internal`, `store`, defines per profile | C-051, C-142 |
+| Scripting backend | IL2CPP for shipping; Mono only where AOT is impossible | C-052, C-100 |
+| Managed stripping | `Minimal` until a device test proves a higher level | C-146, C-147 |
+| Reflection under IL2CPP | Preserve each reflected type, then prove on device | C-147 |
+| Engine code stripping | `PlayerSettings.stripEngineCode` on for an IL2CPP store build | C-150 |
 | Tests | EditMode for logic, PlayMode for scene and physics; T1 `unity test`, T0 batchmode recipe, never both | ADR-0011, C-050 |
 | Build time + size | Record minutes and size per target, set a size ceiling | — |
 | Symbols | Per-build bundle kept with the artifact and the reporter | — |
@@ -55,7 +56,7 @@ Router role: pick the release kind, apply the defaults, then run [workflows/rele
 
 Flag spellings move between editor versions: confirm them with `<editor> -help` before wiring a command into CI.
 
-CI pipeline (GitHub Actions + GameCI):
+CI pipeline (GitHub Actions + GameCI) (C-053):
 ```yaml
 on: [push, pull_request]
 jobs:
@@ -80,7 +81,7 @@ jobs:
         with: { name: builds-${{ github.run_number }}, path: artifacts/ }
 ```
 
-Batchmode test — the T0 recipe from ADR-0011:
+Batchmode test — the T0 recipe from ADR-0011, with the command-line arguments the test framework defines (C-144):
 ```bash
 "$UNITY_EDITOR" -batchmode -nographics -projectPath "$PROJECT" \
   -runTests -testPlatform EditMode \
@@ -114,12 +115,14 @@ public static class BuildScript
             target = BuildTarget.StandaloneLinux64,
             extraScriptingDefines = p.Defines,
         };
-        var report = BuildPipeline.BuildPlayer(options);
+        var report = BuildPipeline.BuildPlayer(options);   // C-099
         if (report.summary.result != BuildResult.Succeeded)
             throw new System.Exception($"Build failed: {report.summary.result}");
     }
 }
 ```
+
+A programmatic build invalidates editor variables that reference GameObjects (C-151); re-resolve them after the build.
 
 Opt-in build guard — inactive unless the active profile turns it on. Unity 6
 names the build callbacks `IPreprocessBuildWithContext` and
@@ -157,8 +160,8 @@ export VERSION="${GIT_TAG}+${GIT_SHA}.${BUILD_NUMBER}"
 - No shipping without a green test run and archived results.
 - No secrets in the repo, in the client, or in CI logs.
 - No crash reporting without a disclosure and a consent path.
-- No stripping level raised without a device test.
-- No reflection-dependent code under IL2CPP without a preservation entry.
+- No stripping level raised without a device test (C-146).
+- No reflection-dependent code under IL2CPP without a preservation entry (C-147).
 - No store submission without the signed compliance checklist.
 - No auto-injected editor hooks or auto-running detectors.
 - No mutable `latest` tag anywhere in a release pipeline.

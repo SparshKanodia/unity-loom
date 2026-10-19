@@ -20,20 +20,20 @@ Work [workflows/3d.md](../../workflows/3d.md) in order. API facts: [references/c
 
 | Question | Default |
 |---|---|
-| Player movement | Kinematic `CharacterController` for authored feel, `Rigidbody` when physics-driven |
+| Player movement | Kinematic `CharacterController` for authored feel, `Rigidbody` when physics-driven (C-115) |
 | Physics body | `MovePosition` with interpolation, never `transform` writes |
-| Navigation | `NavMeshSurface` baked offline, `NavMeshAgent` only for pathing AI |
+| Navigation | `NavMeshSurface` baked offline (C-092), `NavMeshAgent` only for pathing AI |
 | Cameras | Cinemachine: one brain, one virtual camera per shot |
 | Blockout | ProBuilder greybox, bake nav and lighting, then art pass |
-| Visibility | LOD group per prop cluster, baked occlusion in closed interiors |
+| Visibility | LOD group per prop cluster (C-091), baked occlusion in closed interiors (C-116) |
 
 ## Decision tree
 
 - **Kinematic or dynamic player?** → authored movement is kinematic; ragdolls and physics puzzles are dynamic. One body, one approach.
-- **Static or dynamic batching?** → SRP Batcher for opaque geometry sharing a material, GPU instancing for repeats (C-011).
+- **Static or dynamic batching?** → SRP Batcher for opaque geometry sharing a material (C-010), GPU instancing for repeats (C-011).
 - **Baked or realtime lighting?** → bake static lightmaps; realtime only for moving lights, off on mobile.
 - **Timeline or custom animation?** → Timeline for scripted sequences, code for gameplay state machines.
-- **ProBuilder or imported mesh?** → ProBuilder for blockout, collision and lightmap UVs; imported art gets a simple collider.
+- **ProBuilder or imported mesh?** → ProBuilder for blockout, collision and lightmap UVs (C-107); imported art gets a simple collider.
 - **LOD and occlusion strategy?** → LOD group per prop cluster, baked occlusion per closed interior, both checked in the frame debugger.
 - **Camera feels unsmooth?** → tune Cinemachine damping and the brain update, not hand-written camera code.
 
@@ -41,28 +41,29 @@ Work [workflows/3d.md](../../workflows/3d.md) in order. API facts: [references/c
 
 | Setting | Default |
 |---|---|
-| `Rigidbody.interpolation` | `Interpolate` on every script-driven body |
+| `Rigidbody.interpolation` | `Interpolate` on every script-driven body; it is off by default (C-075) |
 | Collision detection | `Discrete`; `ContinuousDynamic` for fast movers, `ContinuousSpeculative` for kinematic |
 | Layer collision matrix | Enable only the pairs the game uses |
-| Solver iterations | Engine defaults (6 / 1); raise only against measured jitter |
+| Solver iterations | Engine default 6 (C-173); raise only against measured jitter, and only for new bodies (C-173) |
 | Contact offset | Leave `Physics.defaultContactOffset` alone; tune thin colliders individually |
-| `NavMeshSurface` agent | Radius 0.5 m, height 2.0 m, max slope 45° |
-| `NavMeshSurface` voxel size | Keep the agent type default (about 0.17 m); coarsen for bake time |
+| `NavMeshSurface` agent | Project values: radius 0.5 m, height 2.0 m, max slope 45° |
+| `NavMeshSurface` bake | Tile size and voxel size overrides stay at the agent type default (C-117) |
 | Cinemachine blend | `EaseInOut` for gameplay cameras, `Cut` for hard cuts |
 | Cinemachine damping | 0.2–0.5 s on a follow rig, never zero |
 | `CinemachineBrain` update | `Smart Update` (default); `Late Update` for rigid-body targets |
-| `LODGroup` | Screen-relative transition height 0.2–0.3, three levels plus a culled level |
-| Occlusion | Baked for closed interiors, re-baked after every level edit |
+| `LODGroup` | Screen-relative transition height 0.2–0.3, three levels plus a culled level (C-091) |
+| Occlusion | Baked for closed interiors, re-baked after every level edit (C-116) |
 | Terrain collision | The terrain's own collider; mesh colliders only for carved holes |
 | `Animator` culling | `CullUpdateTransforms` for offscreen characters (C-040) |
 | Timeline | `Director` on `GameTime`, `Animation` and `Audio` tracks on scene objects |
 
-Bake via the editor API (`NavMeshSurface.BuildNavMesh()`), never a GUI step (ADR-0007).
+Bake via the editor API (`NavMeshSurface.BuildNavMesh()`), never a GUI step (ADR-0007, C-092).
 
 ## Idiomatic C#
 
 ```csharp
 // Kinematic player; input is injected by the input layer.
+// CharacterController moves without a rigidbody and is constrained by collisions (C-115).
 public sealed class KinematicMover : MonoBehaviour
 {
     [SerializeField] float speed = 5f, gravity = -20f;
@@ -91,7 +92,7 @@ public sealed class RigidbodyMover : MonoBehaviour
     void Awake()
     {
         _body = GetComponent<Rigidbody>();
-        _body.interpolation = RigidbodyInterpolation.Interpolate;
+        _body.interpolation = RigidbodyInterpolation.Interpolate;   // off by default (C-075)
         _body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
     }
     void FixedUpdate()
@@ -120,13 +121,13 @@ public sealed class EnemyAgent : MonoBehaviour
 
 ```csharp
 using Unity.Profiling;
-static readonly ProfilerMarker s_Scan = new ProfilerMarker("AI.Scan");
+static readonly ProfilerMarker s_Scan = new ProfilerMarker("AI.Scan");   // C-085
 static readonly Collider[] s_Hits = new Collider[8];   // preallocated, never grown
 void Update()
 {
     using (s_Scan.Auto())
     {
-        int n = Physics.OverlapSphereNonAlloc(transform.position, radius, s_Hits, mask);
+        int n = Physics.OverlapSphereNonAlloc(transform.position, radius, s_Hits, mask);  // C-182
         for (int i = 0; i < n; i++) { /* react to s_Hits[i] */ }
     }
 }
@@ -145,18 +146,19 @@ void SetState(float speed, bool grounded)
 }
 ```
 
-`LODGroup`: one group per prop cluster, an explicit low-poly final level, empty culled level.
+`LODGroup`: one group per prop cluster, an explicit low-poly final level, empty culled level (C-091).
 
 ## Red lines
 
-- No per-frame `GetComponent`, `Find`, `Camera.main` or allocating physics query.
+- No per-frame `GetComponent`, `Find`, `Camera.main` or allocating physics query (C-002, C-006, C-070, C-182).
 - No non-convex `MeshCollider` on a moving `Rigidbody` (C-041).
-- No `Physics.SyncTransforms` inside a loop; it forces a full physics sync.
-- No `transform.position` writes on a physics body; move it with interpolation.
-- No static geometry left unbaked for navigation or lighting after an edit.
-- No `LODGroup` with empty, mis-ordered or missing lower-detail levels.
+- No `Physics.SyncTransforms` inside a loop; one sync per frame is the project limit.
+- No `transform.position` writes on a physics body; move it with interpolation (C-075).
+- No static geometry left unbaked for navigation or lighting after an edit (C-092, C-116).
+- No `LODGroup` with empty, mis-ordered or missing lower-detail levels (C-091).
 - No allocation in `Update`: no LINQ, no closures, no string concatenation.
-- No string-keyed `Animator` parameters at runtime (C-040).
+- No string-keyed `Animator` parameters at runtime.
+- No `Animator` left without a culling mode for offscreen characters (C-040).
 
 ## Verify
 

@@ -33,30 +33,30 @@ Work [workflows/graphics.md](../../workflows/graphics.md). API facts: [reference
 - **Too many draw calls?** → SRP Batcher compatibility first (C-010), then GPU instancing for repeats (C-011).
 - **Fill-rate bound?** → stacked transparency is the usual cause (C-012); cut layers, lower render scale.
 - **Baked or realtime GI?** → bake static, realtime only for lights that must move, off on mobile.
-- **Forward or deferred?** → URP's default forward path with a small light count; deferred only on supported renderers.
+- **Forward or deferred?** → URP's default forward path with a small light count; deferred only on supported renderers (C-105).
 - **Shader Graph or HLSL?** → Shader Graph unless the look needs custom lighting, stencil work or a hot loop.
 - **VFX Graph or legacy particles?** → Particle System for CPU-bounded bursts, VFX Graph when GPU-bound.
-- **Is a custom shader needed?** → only when Shader Graph cannot express the look; keep variants bounded.
+- **Is a custom shader needed?** → only when Shader Graph cannot express the look; keep variants bounded (C-014).
 
 ## Pipeline defaults
 
 | Setting | Default |
 |---|---|
-| Pipeline asset | One URP asset per platform tier; HDRP only for high-end GI or ray tracing |
+| Pipeline asset | One URP asset per platform tier (C-078); HDRP only for high-end GI or ray tracing |
 | Render scale and MSAA | 0.7–1.0 and 2× on mobile, 1.0 and 4× on desktop, MSAA off with a heavy post stack |
-| Main light shadows | Soft, 2 cascades; 30–50 m at 1024 on desktop, 15–25 m at 512 on mobile, none on the low tier |
+| Main light shadows | Soft, 2 cascades; 30–50 m at 1024 on desktop, 15–25 m at 512 on mobile, none on the low tier (C-184) |
 | Additional lights | 4 per object on desktop, 1 on mobile, per-pixel off on the low tier |
 | Texture compression | ASTC on mobile and Quest, BC7 on desktop (C-043) |
 | Shader variants | Strip unused variants in the pipeline asset (C-014) |
-| Material overrides | `MaterialPropertyBlock` per renderer, never a per-object material |
-| Baked lighting | Bake static lightmaps, one probe group per room, APV on high tiers, one reflection probe per room |
+| Material overrides | `MaterialPropertyBlock` per renderer, never a per-object material (C-087) |
+| Baked lighting | Bake static lightmaps, one probe group per room, APV on high tiers (C-108), one reflection probe per room (C-110) |
 | Post-processing | One global volume per scene, per-tier overrides, local volumes for effects |
-| Decals and particles | ≤ 4 decals per camera and ≤ 200 particles per system on mobile |
+| Decals and particles | ≤ 4 decals per camera (C-109) and ≤ 200 particles per system on mobile |
 | LOD bias | 1.0 on mobile, 1.0–2.0 on desktop (higher keeps more detail) |
 
 ## Idiomatic HLSL
 
-The CBUFFER keeps the SRP Batcher intact; the macros make it instancing-ready.
+Keep every material property in the `UnityPerMaterial` CBUFFER so the SRP Batcher can keep the material in one batch (C-010); the macros make it instancing-ready (C-011).
 
 ```hlsl
 Shader "Loom/FlatLit"
@@ -96,14 +96,14 @@ Shader "Loom/FlatLit"
 }
 ```
 
-URP lit shaders also need `ShadowCaster` and `DepthOnly` passes.
+A custom lit shader in this project also declares the `ShadowCaster` and `DepthOnly` passes.
 
 ## Idiomatic C#
 
 ```csharp
 using UnityEngine;
 
-static readonly int s_ColorId = Shader.PropertyToID("_BaseColor");
+static readonly int s_ColorId = Shader.PropertyToID("_BaseColor");   // C-183
 MaterialPropertyBlock _block;
 Renderer _renderer;
 void Awake()
@@ -115,11 +115,11 @@ void LateUpdate()
 {
     _block.Clear();
     _block.SetColor(s_ColorId, Color.Lerp(_a, _b, t));
-    _renderer.SetPropertyBlock(_block);  // no material instance
+    _renderer.SetPropertyBlock(_block);  // no material instance (C-087)
 }
 ```
 
-One block per renderer; a block is overwritten by the next user.
+One block per renderer in this project, so a block is never shared between renderers (C-087).
 
 ```csharp
 // One realtime key light; everything else is baked.
@@ -141,14 +141,14 @@ ps.main.maxParticles = lowTier ? 200 : 600;
 ps.main.simulationSpace = ParticleSystemSimulationSpace.World;
 ```
 
-ReflectionProbe: one per room or outdoor region, baked unless something in it moves.
+ReflectionProbe: one per room or outdoor region, baked unless something in it moves (C-110).
 
 ## Red lines
 
-- No per-object material instantiation in a loop; use `MaterialPropertyBlock`.
-- No `SetColor` on a shared material in a hot path; it repaints every user.
-- No material property outside the `UnityPerMaterial` CBUFFER; it breaks the SRP Batcher (C-010).
-- No multi-pass shaders in URP; extra passes cost twice and break batching.
+- No per-object material instantiation in a loop; use `MaterialPropertyBlock` (C-087).
+- No per-object `SetColor` on a shared material; use a property block instead (C-087).
+- No material property outside the `UnityPerMaterial` CBUFFER; keep every material property in one constant buffer so the SRP Batcher can keep the material in one batch (C-010).
+- No multi-pass shaders by default; an extra pass is an explicit cost, recorded in the change log.
 - No unbounded overdraw from stacked transparency (C-012).
 - No `Material` allocation per frame and no `Shader.Find` in a hot path.
 - No realtime GI or realtime shadow cascades on mobile by default.

@@ -3,6 +3,31 @@
 Owner domain: [loom-simulation](../skills/loom-simulation/SKILL.md).
 Precondition: [foundation](foundation.md) is done; headset delivery also
 [xr](xr.md).
+Template: [docs/07-workflow-template.md](../docs/07-workflow-template.md).
+
+## When to use
+
+- A training outcome has to be written as one measurable skill.
+- A procedure has to be modelled as steps with entry, success and failure
+  conditions.
+- A score has to be computed from something repeatable, not from what the
+  trainee saw on screen.
+- Statements have to reach a learning record store, or a proprietary LMS.
+- A CAD or 3D asset has to be brought into the project at the right scale.
+- Personal data from a learner has to be collected, kept and deleted.
+
+## When not to use
+
+- A request about the rig, the comfort model or the headset session ->
+  [xr](xr.md).
+- A request about the folder tree, the save format or the step graph ->
+  [foundation](foundation.md).
+- A request about frame cost or allocation -> [performance](performance.md).
+- A request about the build, the store listing or the privacy declaration
+  that ships -> [release](release.md).
+- A request about the interface or the menus -> [ui-audio](ui-audio.md).
+- A request about the render pipeline or the imported look ->
+  [graphics](graphics.md).
 
 ## Before you start
 
@@ -15,7 +40,13 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
   [references/claims.md](../references/claims.md); the stakeholder, the
   assessment body and the deployment target are named.
 
-## Phase 1 — Use case and delivery standard
+`docs/simulation-objective.md` is a document of the user's project, not of
+this repository. Phase 1 creates it, with the stakeholder. If it is missing
+when phase 1 starts, that is a blocker to clear, not a broken link.
+
+## Steps
+
+### Phase 1 — Use case and delivery standard
 
 - [ ] Write the learning outcome as one measurable skill, with the pass
       criteria and the measurement method, and list what is out of scope.
@@ -33,7 +64,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 | SCORM | an LMS launches the content and tracks a score | one completion at the end |
 | Custom LMS API | a proprietary system owns the record | a custom payload per event |
 
-## Phase 2 — Procedure authoring model
+### Phase 2 — Procedure authoring model
 
 - [ ] Model the procedure as a graph of steps: each step has an entry
       condition, an action set, a success condition and a failure
@@ -48,7 +79,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
   graph validation reports no orphan step, and a content change needs no
   code change.
 
-## Phase 3 — Assessment and scoring
+### Phase 3 — Assessment and scoring
 
 - [ ] Log the discrete events below, with the timestamp, the step id and
       the error type; never score from a rendered observation (C-061).
@@ -72,7 +103,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 | Step failed | the failure condition holds | the attempt result |
 | Attempt started | the learner begins | the attempt count |
 
-## Phase 4 — Data and identity
+### Phase 4 — Data and identity
 
 - [ ] Define the learner identity model: a local anonymous id, the
       mapping to the person and who owns it. Keep it server-side, so no
@@ -98,7 +129,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 | Two devices report the learner | the newest attempt id wins | the attempt list stays complete |
 | The device clock is wrong | the server timestamps the receipt | the order is not the clock |
 
-## Phase 5 — Analytics and reporting
+### Phase 5 — Analytics and reporting
 
 - [ ] Map every event of Phase 3 to one statement: the attempt events
       become initialized and terminated, the step events become
@@ -115,7 +146,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 - **Gate:** one statement validates against the schema, the statements
   arrive at the endpoint, and the retention rule is written.
 
-## Phase 6 — Three-dimensional and CAD asset pipeline
+### Phase 6 — Three-dimensional and CAD asset pipeline
 
 - [ ] Fix the unit and the axis convention for the project and write it
       into the objective file; set the import global scale explicitly
@@ -144,7 +175,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 | Collider | a simple primitive matching the visible shape | the physics is wrong |
 | Metadata | a scan for the fields the client must not ship | a licence problem |
 
-## Phase 7 — Privacy and security gate
+### Phase 7 — Privacy and security gate
 
 - [ ] Apply [doctrine/01-safety.md](../doctrine/01-safety.md) to every
       personal datum: the camera feed, the room mesh, the body and face
@@ -162,7 +193,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
   contains no secret, and the scenario keeps running with the network
   off.
 
-## Phase 8 — Verification
+### Phase 8 — Verification
 
 - [ ] Run a test scene that completes the procedure, record the event
       log, replay it through the score function and confirm the score is
@@ -178,26 +209,60 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
   reproducible, the statement validates, the queue flushes, the resume
   restores the state, and the asset gate is clean.
 
-## Handoff
+## Limitations
 
-- The runtime, the rig and the comfort → [xr](xr.md); the step graph and
-  the save format → [foundation](foundation.md).
-- The frame cost → [performance](performance.md); the build, the LMS
-  and the privacy note → [release](release.md).
+- The simulation workflow does not author course content. The objective,
+  the pass criteria and the step graph are written by an instructor; this
+  workflow makes them runnable and measurable.
+- It does not own the headset rig, the comfort model or the session
+  lifecycle; [xr](xr.md) owns those.
+- It does not run a learning record store. It produces statements that
+  validate against a schema; the store itself is somebody else's system.
+- It does not decide the data protection policy. The retention and
+  deletion rules are written by the stakeholder, and this workflow only
+  implements and verifies them.
+- The event vocabulary is a minimum, not a standard. A delivery standard
+  that requires more fields wins over the table above.
+- The score function is only as good as the event log. An event that is
+  never emitted is invisible to the score, and no gate here can prove
+  that an event was needed.
+- It does not measure whether the training teaches anything. A procedure
+  can be completed perfectly and still be the wrong training.
+
+## If a step fails
+
+1. Stop at the failing gate; keep the last good event log and the last
+   good score.
+2. Revert the change that broke it: `git revert <sha>`, or restore the
+   step asset, the score function or the sync rules from the last good
+   commit.
+3. Re-run the unit test of the score function with the fixed log and the
+   fixed expected score, and re-read the statement validator output, to
+   confirm the revert landed.
+4. Re-read the phase gate, and re-run the test scene from a clean state.
+5. If the fix needs the stakeholder, the assessment body, a learning
+   record store, a legal decision about personal data or a second device,
+   emit a `HUMAN HANDOFF` block with What, Why, Steps and Verify, and
+   stop.
+6. If the same gate fails twice, write a deviation record: the gate, the
+   reason, who accepted it and the date.
 
 ## Done when
 
-- The outcome, the pass criteria, the scope guard and the delivery
-  standard are written and accepted.
-- The procedure is an externalized step graph with success, failure and
-  resume per step; the score is a pure function over a discrete event
-  log, and the attempt and mastery rules are enforced.
-- The session resumes from the last committed step, the offline queue
-  flushes, the sync rules are implemented, and no personal data ships in
-  the client.
-- One statement validates against the schema, the statements reach the
-  endpoint, the retention rule is written, and every imported asset
-  passes the verification gate with the correct units.
-- The consent, refusal, minimization, retention and deletion paths work,
-  the test scene completes the procedure, and the resume restores the
-  state.
+- [ ] The outcome, the pass criteria, the scope guard and the delivery
+      standard are written and accepted; the acceptance is recorded in the
+      objective file.
+- [ ] The procedure is an externalized step graph with success, failure and
+      resume per step; the score is a pure function over a discrete event
+      log, and the attempt and mastery rules are enforced. The unit test of
+      the score function passes on the fixed log.
+- [ ] The session resumes from the last committed step, the offline queue
+      flushes, the sync rules are implemented, and no personal data ships in
+      the client; the client build scan is clean.
+- [ ] One statement validates against the schema, the statements reach the
+      endpoint, the retention rule is written, and every imported asset
+      passes the verification gate with the correct units; the validator
+      output and the asset report are archived.
+- [ ] The consent, refusal, minimization, retention and deletion paths work,
+      the test scene completes the procedure, and the resume restores the
+      state; the deletion request log is archived.

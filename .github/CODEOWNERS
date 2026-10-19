@@ -1,0 +1,38 @@
+# CODEOWNERS
+
+# PLACEHOLDER FILE. Every owner handle below is a placeholder.
+#
+# The maintainer of record replaces each `@PLACEHOLDER-...` handle with a real
+# GitHub user or team before this file is merged. A placeholder handle matches
+# nobody and grants no access, so an unreplaced file falls back to the
+# repository default rather than to a wrong person.
+#
+# Order matters: the first matching pattern wins, so the default rule comes
+# first and the specific rules below refine it.
+
+# Default owners: everything that no later rule claims.
+*                                       @PLACEHOLDER-org/unity-loom-maintainers
+
+# The machine registry and the tooling that reads it.
+manifest.json                           @PLACEHOLDER-org/unity-loom-maintainers
+tools/                                  @PLACEHOLDER-org/unity-loom-maintainers
+.github/                                @PLACEHOLDER-org/unity-loom-maintainers
+
+# The law. A change here touches every skill and every workflow.
+doctrine/                               @PLACEHOLDER-org/doctrine-owners
+
+# The shared tables: the claim registry, the XR dialect, the ledgers.
+references/                             @PLACEHOLDER-org/references-owners
+
+# The skills and the workflows they own.
+skills/                                 @PLACEHOLDER-org/skills-owners
+workflows/                              @PLACEHOLDER-org/skills-owners
+
+# The design record.
+docs/                                   @PLACEHOLDER-org/docs-owners
+
+# The contributor guide and the human entry points.
+CONTRIBUTING.md                         @PLACEHOLDER-org/unity-loom-maintainers
+README.md                               @PLACEHOLDER-org/unity-loom-maintainers
+AGENTS.md                               @PLACEHOLDER-org/unity-loom-maintainers
+HARNESSES.md                            @PLACEHOLDER-org/unity-loom-maintainers

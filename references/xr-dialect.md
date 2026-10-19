@@ -4,7 +4,7 @@ Upstream XR examples use three different API generations. To avoid hallucinated 
 
 Primary stack: **Unity 6 LTS + URP + XRI 3.x + AR Foundation 6.x + OpenXR**.
 
-This file fixes **names only**. Setup and comfort rules: [skills/loom-xr/SKILL.md](../skills/loom-xr/SKILL.md); sequence: [workflows/xr.md](../workflows/xr.md); decision: [ADR-0005](../docs/03-decision-records.md). Facts cited as `C-0xx` in [claims.md](claims.md).
+This file fixes **names only**, and it owns the interaction lifecycle and the resume procedure. Setup: [skills/loom-xr/SKILL.md](../skills/loom-xr/SKILL.md); sequence: [workflows/xr.md](../workflows/xr.md); dialect decision: [ADR-0005](../docs/03-decision-records.md); comfort and locomotion defaults: [ADR-0006](../docs/03-decision-records.md). Facts cited as `C-0xx` in [claims.md](claims.md).
 
 ## Naming: use / avoid
 
@@ -14,7 +14,7 @@ This file fixes **names only**. Setup and comfort rules: [skills/loom-xr/SKILL.m
 | Interactors | `XRDirectInteractor`, `XRRayInteractor`, `XRPokeInteractor`, `XRSocketInteractor`, `XRNearFarInteractor` | `GrabInteractor`, `RayInteractor`, `FingerInteractor`, `SocketInteractor`, `NearFarInteractor` | renamed in 2.0/3.x |
 | Interactor line | `XRInteractorLineVisual` (visual only) | `XRInteractorLineRenderer` | not an interactor |
 | Interactables | `XRBaseInteractable`, `XRGrabInteractable`, `XRSimpleInteractable` | `XRInteractable`, `XRGrabable`, `XRButton` | base, grab, select |
-| Hold movement type | `MovementType`: `VelocityTracking`, `Kinematic`, `Instantaneous` | `MotionType`, `ThrowType` | renamed in 2.0 |
+| Hold movement type | `XRGrabInteractable.movementType`, set to `VelocityTracking`, `Kinematic` or `Instantaneous` | `MotionType`, `ThrowType` | the property belongs to the grab component (C-080) |
 | Interaction events | `selectEntered`, `selectExited`, `activateEntered`, `hoverEntered` | `OnSelectEntered`, `OnSelectExited`, `OnGrab`, `OnRelease` | see C-021 |
 | Rig | `XROrigin` (XR Core Utilities 2.x) | `ARSessionOrigin`, hand-rolled rig | see C-022 |
 | Rig camera | `XROrigin.Camera`, `XROriginCamera` | `Camera.main` as rig source | see C-002 |
@@ -35,22 +35,26 @@ This file fixes **names only**. Setup and comfort rules: [skills/loom-xr/SKILL.m
 | AR anchors | `ARAnchor` from `ARAnchorManager` | `XRAnchor`, `XRAnchorManager` | no `XRAnchor` in ARF 6.x |
 | AR config and occlusion | `ARWorldTrackingConfiguration`, `AROcclusionManager` | `ARSessionConfiguration` (1.x), depth shaders | replaced in ARF 3.x |
 | AR provider | ARCore / ARKit plug-in in XR Plug-in Management | `ARCoreSession` used directly | see C-024 |
-| OpenXR | `OpenXRLoader`, `OpenXRSettings`, `OpenXRFeature`, `OpenXRInteractionFeature` | `OculusLoader`, `OVRManager`, `OpenXRLoaderFeature` | one loader per target |
+| OpenXR | `OpenXRLoader`, `OpenXRFeature`, `OpenXRInteractionFeature` | `OculusLoader`, `OVRManager`, `OpenXRSettings` | one loader per target; the features are read back, never assumed |
 | XR settings | `XRGeneralSettings` | `XRSettings.enabled`, `XRSettings.device` | legacy `UnityEngine.XR` |
 | MR room data | Meta MR Utility Kit (MRUK) | hand-rolled room scan | see C-028 |
 | visionOS | PolySpatial with the visionOS XR Plug-in | ARKit tricks inside Unity | see C-030 |
 
 ## The interaction lifecycle
 
-Model these five transitions; most XR bugs come from omitting one. The contract is in [skills/loom-xr/SKILL.md](../skills/loom-xr/SKILL.md).
+This is the contract: the skill links to it, and no second copy of the phases
+exists. Most XR bugs come from omitting one transition.
 
 1. **Hover** — highlight; optional haptic tick.
 2. **Select** — grab/activate with visual + audio + haptic feedback.
 3. **Hold** — pick the movement type deliberately (table below).
 4. **Release** — restore physics, clear parent, apply the throw setting.
-5. **Destroy/despawn** — drop references, never destroy while selected, unregister from the manager.
+5. **Despawn** — drop references, unregister from the manager, and never destroy
+   an object while it is still selected.
 
-`XRGrabInteractable.movementType` is the only place the hold type is chosen.
+`movementType` is a property of the `XRGrabInteractable` component, and it is the
+only place the hold type is chosen (C-080). The enum it takes comes from the base
+type `XRBaseInteractable` (C-122).
 
 | Object class | Movement type | Why |
 |---|---|---|
@@ -63,7 +67,8 @@ Model these five transitions; most XR bugs come from omitting one. The contract 
 
 ## Resume procedure
 
-System menus and pauses commonly stop input. On focus regain, work these steps in order.
+This is the canonical procedure; the skill and the workflow point at it. System
+menus and pauses commonly stop input. On focus regain, work these steps in order.
 
 | # | Action | State to re-read | Observable proof |
 |---|---|---|---|
@@ -107,7 +112,12 @@ Old-LTS code is ported forward.
 
 ## OpenXR feature groups and interaction profiles
 
-Feature groups and profiles are set per build target in XR Plug-in Management. The names below are the stable ones; anything else (hand-tracking groups, eye gaze, room-scale features) must be **discovered at runtime in XR Plug-in Management**, not assumed. `OpenXRInteractionFeature` subclasses are what the profiles add; an unsupported profile fails at runtime, not at build time.
+Set the feature groups and the interaction profiles per build target in XR
+Plug-in Management, then read the values back at runtime. Never assume a feature
+group name or a feature class: the names move between OpenXR releases, and a
+profile that the build does not carry fails at runtime, not at build time. The
+table below lists the groups that are commonly enabled; anything else is read
+from the project's own settings and confirmed in the runtime log.
 
 | Platform | Feature groups to enable | Interaction profiles |
 |---|---|---|
@@ -126,7 +136,8 @@ Feature groups and profiles are set per build target in XR Plug-in Management. T
 | AR mobile | provider plug-in in XR Plug-in Management (C-024); LiDAR devices give planes and depth, non-LiDAR ones do not; light estimation optional; occlusion depth range limited |
 | MR / passthrough | composition layers, room data (C-028), world-lock and anchor content (C-026) |
 
-Comfort defaults: [skills/loom-xr/SKILL.md](../skills/loom-xr/SKILL.md) and [ADR-0006](../docs/03-decision-records.md).
+Comfort and locomotion defaults are owned by [ADR-0006](../docs/03-decision-records.md);
+this file does not restate them.
 
 ## Hallucination guard
 
@@ -138,7 +149,7 @@ APIs agents invent most often in XR, and the construct to use instead.
 | `ARSessionOrigin` | replaced in ARF 5.x | `XROrigin` (C-022) |
 | `InteractionManager`, `XRInteractorManager` | wrong or missing | `XRInteractionManager` |
 | `UnityEngine.XR.InputDevices` | legacy namespace | `UnityEngine.InputSystem.XR` |
-| `XRSettings.enabled` / `XRSettings.device` | legacy settings API | `XRGeneralSettings`, `OpenXRSettings` |
+| `XRSettings.enabled` / `XRSettings.device` | legacy settings API | `XRGeneralSettings`, and the OpenXR feature list read back from the project's own settings |
 | `InputTracking.GetLocalPosition`, `TrackedDevicePose` (legacy struct) | legacy `UnityEngine.XR` types | Input System tracked poses |
 | `Camera.main` driving the rig | tagged-search camera, wrong transform | `XROrigin.Camera` (C-002) |
 | `controller.vibrate()` | no such method on XR controllers | Input System XR haptics |
@@ -157,7 +168,7 @@ APIs agents invent most often in XR, and the construct to use instead.
 |---|---|
 | VR | rig validation is error-free; both eyes render (C-020) |
 | VR | a select gives visual, audio **and** haptic feedback on device, and still fires after a system-menu pause and resume |
-| VR | comfort settings change behaviour; smooth move stays opt-in (C-027) |
+| VR | comfort settings change behaviour (C-027); the defaults are ADR-0006's |
 | VR | frame time holds 20+ minutes, no GC spikes in XR hot paths |
 | AR | placed content stays anchored while walking and after resume (C-026) |
 | AR | permission-denied, unsupported-device, tracking-lost are handled |

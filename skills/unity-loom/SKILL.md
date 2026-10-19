@@ -1,30 +1,51 @@
 ---
 name: unity-loom
-description: "Entry router for Unity Loom. Use for any Unity request: it runs the mandatory pre-flight (safety, capability tier, state freshness), selects exactly one domain skill and its workflow, and resolves cross-domain conflicts by precedence instead of guessing. Start here before any Unity task."
+description: "Use for any Unity request: it runs the mandatory pre-flight (safety, capability tier, state freshness), selects exactly one domain skill and its workflow, and resolves cross-domain conflicts by precedence instead of guessing. Start here before any Unity task."
 allowed-tools: Read, Grep, Glob, Bash
 metadata:
   loom: 1
   domain: router
   tier: 0
   triggers: ["unity", "my game", "the project", "unity editor", "scene", "prefab", "gameobject", "component", "unity version", "help with unity", "build my unity app"]
-  budget: { lines: 120, bytes: 6000 }
+  budget: { lines: 140, bytes: 8000 }
   verified-against: ["Unity 6000.3 LTS"]
   sources: ["docs.unity3d.com/6000.3/Documentation/Manual/"]
 ---
 
 # Unity Loom — Router
 
-You are the single entry point. **Run the pre-flight, then route to exactly one domain skill.** Do not start domain work from here.
+## When to use
 
-## 1. Pre-flight (always, in order)
+- Every Unity request starts here; the router picks one domain skill.
+- A request that names no domain trigger still starts here.
+- A request that names two domains starts here, to be resolved by precedence.
+- A request that is a question rather than a change stays here.
 
-1. **Safety** — [doctrine/01-safety.md](../../doctrine/01-safety.md). Risky action? Ask first, with blast radius.
-2. **Capability tier** — [doctrine/02-capabilities.md](../../doctrine/02-capabilities.md) and [references/adapters.md](../../references/adapters.md). Probe, state the tier, plan the fallback.
-3. **State freshness** — [doctrine/03-state-freshness.md](../../doctrine/03-state-freshness.md). Refresh → compile → read before acting; read back after.
-4. **Output budget** — [doctrine/04-responses.md](../../doctrine/04-responses.md). Filter, paginate, summarize.
-5. **Non-invasiveness** — [doctrine/05-non-invasiveness.md](../../doctrine/05-non-invasiveness.md). No ambient side effects.
+## When not to use
 
-## 2. Routing table
+- The domain skill is already loaded and the task sits inside it -> stay
+  there and follow its workflow.
+- The request is a decision with no code behind it -> ask one question, then
+  route.
+- The request is about the repository itself, not about a Unity project ->
+  read [AGENTS.md](../../AGENTS.md).
+
+## Pick the approach
+
+| Situation | Approach |
+|---|---|
+| One domain trigger matches | Load that skill and the workflow it names |
+| Two or more domains match | Apply the resolution order in [doctrine/00-precedence.md](../../doctrine/00-precedence.md) |
+| The order leaves a tie | Ask exactly one question, then stop |
+| No trigger matches | Stay in the router and use [workflows/foundation.md](../../workflows/foundation.md) |
+| An ADR covers the case | The ADR default wins, and the deviation is recorded |
+
+Example: an XR frame-rate problem routes to **loom-performance**, because a
+measured budget outranks a domain default, and then loops back to
+**loom-xr**. A "save in VR" task routes to **loom-project**, which consults
+**loom-xr** for the storage constraints of a headset.
+
+## Routing table
 
 Match the request against the **Trigger** column (whole word, case-insensitive). The trigger vocabulary below is canonical and identical to `manifest.json` and each skill's frontmatter; the validator fails the build if the three ever drift.
 
@@ -44,25 +65,49 @@ Router-owned broad terms (never route on these alone): unity, my game, the proje
 
 Worked examples: [references/examples.md](../../references/examples.md).
 
-## 3. When several match
+## Setup defaults
 
-Apply the precedence lattice in [doctrine/00-precedence.md](../../doctrine/00-precedence.md):
+The pre-flight runs in this order, and each check has one owning file:
 
-1. Safety → L0 wins.
-2. An ADR covers it → [docs/03-decision-records.md](../../docs/03-decision-records.md) wins.
-3. Measured evidence exists → cite it and it wins.
-4. Otherwise the narrower domain wins.
-5. Still tied → **ask one question**. Do not guess.
+| # | Check | Owner |
+|---|---|---|
+| 1 | Safety, blast radius, secrets | [doctrine/01-safety.md](../../doctrine/01-safety.md) |
+| 2 | Capability tier and the fallback | [doctrine/02-capabilities.md](../../doctrine/02-capabilities.md) |
+| 3 | Refresh, compile, read, act, read back | [doctrine/03-state-freshness.md](../../doctrine/03-state-freshness.md) |
+| 4 | Filter, paginate, summarize, cap | [doctrine/04-responses.md](../../doctrine/04-responses.md) |
+| 5 | No ambient side effects | [doctrine/05-non-invasiveness.md](../../doctrine/05-non-invasiveness.md) |
 
-Example: an XR frame-rate problem routes to **loom-performance** (measured budget beats a domain default), then loops back to **loom-xr**. A "save in VR" task routes to **loom-project**, consulting **loom-xr** for storage constraints.
+State the tier before the first edit. A missing tier downgrades the plan; it
+never fails the task.
 
-## 4. Non-negotiables
+## Examples
 
-- **Executable only.** No GUI-click instructions. If a human is required, emit a `HUMAN HANDOFF` block.
-- **One fact, one place.** Link doctrine and [references/claims.md](../../references/claims.md); never restate them.
-- **Evidence or silence.** No version-specific API claim without a registry source.
-- **Done means proven.** A step is complete only with the observable evidence its workflow's "Done when" gate names.
+[references/examples.md](../../references/examples.md) holds the end-to-end
+worked examples. One shape to copy: name the chosen skill, the workflow, the
+tier, the next two steps and the evidence that will close each of them.
 
-## 5. Answer shape
+## Red lines
 
-Keep the reply small: (1) tier + detected project, (2) the chosen skill and workflow, (3) the next one or two concrete steps, (4) what evidence will prove it. Nothing else.
+- No GUI instruction and no ambient side effect: ADR-0007 and
+  [doctrine/05-non-invasiveness.md](../../doctrine/05-non-invasiveness.md).
+- No second copy of a doctrine rule or an API fact: link the owning file,
+  and cite an id from [references/claims.md](../../references/claims.md).
+- No guessing between two domains: the tie-break is one question.
+- No step counted as done without the evidence its workflow names.
+- No secret in a project, a log or a commit.
+
+## Verify
+
+- The reply names one skill, one workflow and the tier in force.
+- The pre-flight ran, and the tier is written down.
+- The next step is a command, an editor call or a file edit.
+- The evidence that will close the step is named before the step starts.
+
+## Handoff
+
+- The domain skill owns its own detail; the router does not repeat it.
+- A conflict between two domains goes to
+  [doctrine/00-precedence.md](../../doctrine/00-precedence.md) and to the
+  decision records in [docs/03-decision-records.md](../../docs/03-decision-records.md).
+- A request with no owner stays in the router and follows
+  [workflows/foundation.md](../../workflows/foundation.md).

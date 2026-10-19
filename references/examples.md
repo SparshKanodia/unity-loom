@@ -44,7 +44,7 @@ between the `unity` CLI and the editor's `-batchmode` arguments, so run
 1. `Assets/3D/PlayerMotor.cs`: a `CharacterController` motor caching the controller in `Awake`.
 2. `Assets/3D/BakeNavigation.cs`: bake the `NavMeshSurface` with `BuildNavMeshData`, then `NavMesh.AddNavMeshData`.
 3. `Assets/3D/PatrolAgent.cs`: a `NavMeshAgent` taking waypoint destinations, logging `pathStatus` on arrival.
-4. `Assets/3D/CineFollow.cs`: one Cinemachine brain, one virtual camera, tuned damping; no manual `LateUpdate`.
+4. `Assets/3D/CineFollow.cs`: one Cinemachine brain, one `CinemachineCamera` (C-197), tuned damping; no manual `LateUpdate`.
 
 **Verification.** Log `NavMesh baked: 120x120 bounds, 0 sources missing`; a PlayMode test walking the route to every waypoint.
 
@@ -101,8 +101,8 @@ between the `unity` CLI and the editor's `-batchmode` arguments, so run
 
 **Plan.**
 1. `Assets/XR/ResumeHandler.cs`: on `OnApplicationFocus(true)` re-enable the interactors, re-register them with the `XRInteractionManager`, re-read the devices, then log `resume: interactors=2 devices=2`.
-2. `Assets/XR/GrabCube.cs`: all five transitions - hover, select, hold, release, destroy - via `selectEntered` and `selectExited` (C-021), a non-trigger box collider plus a Rigidbody (C-023).
-3. `Assets/XR/ComfortSettings.cs`: teleport locomotion, 30 degree snap turn and a vignette, adjustable at runtime (C-027, ADR-0006).
+2. `Assets/XR/GrabCube.cs`: all five transitions - hover, select, hold, release, despawn - via `selectEntered` and `selectExited` (C-021), a non-trigger box collider plus a Rigidbody (C-023).
+3. `Assets/XR/ComfortSettings.cs`: the locomotion and comfort defaults named in ADR-0006, exposed as runtime settings (C-027, ADR-0006).
 
 ```text
 HUMAN HANDOFF
@@ -145,7 +145,7 @@ Verify: One "resume: interactors=2 devices=2" line, and the cube moves on hold.
 **Request.** "The build is 40 fps on device - find out why"
 **Tier.** T3 - `metavr list` reports the Quest 3 · **Fallback:** T2 editor profiling, HUMAN HANDOFF for the device soak.
 
-**Route.** loom-performance -> [workflows/performance.md](../workflows/performance.md) - "fps" and the device symptom are performance triggers. This workflow overrides a domain default **only with measured evidence** (precedence L3), so a capture naming the bottleneck outranks the graphics default of one post volume with per-tier overrides.
+**Route.** loom-performance -> [workflows/performance.md](../workflows/performance.md) - "fps" and the device symptom are performance triggers. A measured artefact outranks a domain default (precedence L1), so a capture naming the bottleneck outranks the graphics default of one post volume with per-tier overrides.
 
 **Plan.**
 1. `unity build --project-path . --build-target Android --build-name perf-base --development`, deploy it, capture a baseline on the headset over the same 60-second scene.
@@ -168,7 +168,7 @@ Verify: One "resume: interactors=2 devices=2" line, and the cube moves on hold.
 **Route.** loom-release -> [workflows/release.md](../workflows/release.md) - "store submission" and "release" triggers; performance only if a frame-rate claim is missing.
 
 **Plan.**
-1. `ProjectSettings/`: add Build Profiles for dev, release and store with their defines, quality tier and IL2CPP backend (C-051, C-052).
+1. `ProjectSettings/`: add Build Profiles for dev, internal and store with their defines, quality tier and IL2CPP backend (C-051, C-142, C-052).
 2. `unity test --project-path . --test-platform editmode` and `unity test --project-path . --test-platform playmode` - the two Unity Test Framework modes (C-050); at T0 use the batchmode `-runTests` recipe (ADR-0011).
 3. `.github/workflows/unity.yml`: a GameCI pipeline that validates, runs both test modes and uploads the Android artifact (C-053).
 4. Smoke-launch the store build, reach the main menu, load a scene, assert a clean log, archive the manifest and upload the IL2CPP symbols.
@@ -218,13 +218,14 @@ Verify: The console shows the build accepted for review, and the build id sits
 
 **Route.** Conditional, and the condition is evidence. Three domains match: graphics (post-processing), xr (XR scene) and performance (frames). The lattice in [doctrine/00-precedence.md](../doctrine/00-precedence.md) decides it:
 
-1. **L0 safety - nothing applies.** No destructive action is implied, so safety does not decide it.
-2. **L1 ADR - nothing covers it.** ADR-0006 sets locomotion and comfort defaults, ADR-0005 the dialect; neither speaks to post-processing cost.
-3. **L3 measured evidence - the pivot.** "Drops frames" is a symptom, not a measurement. Performance may override a domain default *only* with a capture: a headset capture naming the GPU as dominant routes to **loom-performance -> [workflows/performance.md](../workflows/performance.md)**, which loops back to graphics for the visual change and to xr for stereo. With no capture, performance has no standing, rule 4 applies, and the narrower subject wins: the post stack is the subject, so the route is **loom-graphics -> [workflows/graphics.md](../workflows/graphics.md)**, with xr consulted for stereo and comfort.
-4. **L4 tooling - irrelevant.** The CLI and the bridge are instruments, not deciders.
+1. **L0 doctrine - nothing applies.** No destructive action is implied, so safety does not decide it.
+2. **L1 measured evidence - the pivot.** "Drops frames" is a symptom, not a measurement. A capture is the only thing that outranks a recorded default: a headset capture naming the GPU as dominant routes to **loom-performance -> [workflows/performance.md](../workflows/performance.md)**, which loops back to graphics for the visual change and to xr for stereo. With no capture, the next layer decides, and the narrower subject wins: the post stack is the subject, so the route is **loom-graphics -> [workflows/graphics.md](../workflows/graphics.md)**, with xr consulted for stereo and comfort.
+3. **L2 ADR default - nothing covers it.** ADR-0006 sets locomotion and comfort defaults, ADR-0005 the dialect; neither speaks to post-processing cost.
+4. **L3 domain skill - specificity decides.** Two domains match and neither is cross-cutting, so the subject decides: the post stack, which is graphics.
+5. **L4 and L5 - irrelevant.** An upstream idiom or a personal preference never outranks a measurement or a recorded default.
 
 **Plan.**
-1. Do not guess. If a headset profiler capture exists, read it, apply step 3, and name the file and counters that decided the route.
+1. Do not guess. If a headset profiler capture exists, read it, apply step 2, and name the file and counters that decided the route.
 2. If no capture exists, ask the one disambiguating question below and stop there until it is answered.
 3. On either branch the first move is the same: measure. `Assets/Dev/FrameProbe.cs` with a `ProfilerRecorder` on the GPU frame-time counter, the same 60-second scene, post stack on and off.
 4. With numbers in hand, apply the graphics and xr constraints: one volume with per-tier overrides and no multi-pass stereo (C-012, C-020).
@@ -250,10 +251,10 @@ Verify: The console shows the build accepted for review, and the build id sits
 **Plan.**
 1. `ProjectSettings/ProjectVersion.txt` and `Packages/manifest.json`: read the Unity version and the render pipeline, input system and test packages.
 2. `docs/perf-targets.md`: write the floor device, target frame rate, memory and build-size budget - four values the user supplies (HUMAN HANDOFF, format as in example 5), not values you invent.
-3. `Assets/Game.Runtime.asmdef`, `Assets/Game.Editor.asmdef`, `Assets/Game.Tests.asmdef`: split the scripts into runtime, editor and tests, one-directional dependencies, no cycle.
+3. `Assets/Scripts/Runtime/{Core,Gameplay,Features}`, `Assets/Scripts/Editor`, `Assets/Tests/{EditMode,PlayMode}`: one assembly definition per folder, references pointing one way, no cycle.
 4. `.gitignore`: ignore `Library/`, `Temp/`, `Logs/`, `obj/` and `Build/`, and keep asset serialization as text with visible meta files.
 
-**Verification.** `docs/perf-targets.md` with the four values; the three asmdefs compiling with no dependency cycle; `unity build --project-path . --build-target Android --build-name dev` producing a clean artifact.
+**Verification.** `docs/perf-targets.md` with the four values; the assembly definitions compiling with no dependency cycle; `unity build --project-path . --build-target Android --build-name dev` producing a clean artifact.
 
 **Done when.** The repository is version-controlled, the primary target builds, the assemblies are cycle-free, one vertical slice works, and the performance targets are written.
 
@@ -292,5 +293,5 @@ restate them.
 For an ambiguous request, list the precedence steps from
 [doctrine/00-precedence.md](../doctrine/00-precedence.md), the branch taken for
 each evidence state, and the single question asked when the evidence is missing.
-For a step that needs a person, use the `HUMAN HANDOFF` block format from that
-same doctrine file.
+For a step that needs a person, use the `HUMAN HANDOFF` block format owned by
+[doctrine/01-safety.md](../doctrine/01-safety.md) §11.

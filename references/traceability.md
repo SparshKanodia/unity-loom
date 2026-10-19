@@ -5,10 +5,10 @@ upstream idea and every issue-derived failure is linked to the file that
 answers it, so the design can be checked in both directions.
 
 Sources: `docs/00-repository-synthesis.md` (conflicts 5, failures 6),
-`docs/04-failure-modes.md` (F1 to F15), `docs/03-decision-records.md`
-(ADR-0001 to ADR-0012), `manifest.json` (upstream array, artifact paths).
+`docs/04-failure-modes.md` (F1 to F22), `docs/03-decision-records.md`
+(ADR-0001 to ADR-0024), `manifest.json` (upstream array, artifact paths).
 
-`F1` to `F15` are failure clusters, `C1` to `C12` are conflicts, and
+`F1` to `F22` are failure clusters, `C1` to `C12` are conflicts, and
 `ADR-00nn` are decisions. A name in brackets is a section heading, or a
 distinctive fragment of one, in the cited file. Paths are relative to
 the repository root. Every row carries a verification column: a file, a
@@ -21,18 +21,19 @@ section, or a command.
 3. For each C-row, confirm the ADR id exists in
    `docs/03-decision-records.md` and is reachable from a skill or
    `doctrine/00-precedence.md`.
-4. Run `node tools/validate.mjs`; it must exit 0.
-5. Confirm every file on disk is in `manifest.json`, and every manifest
+4. For each D-row, confirm the ADR exists and names the cluster it settles.
+5. Run `node tools/validate.mjs`; it must exit 0.
+6. Confirm every file on disk is in `manifest.json`, and every manifest
    path exists.
-6. Re-read `references/upstream.md`; each repository there must appear
-   in `docs/05-attribution.md` or in `docs/00-repository-synthesis.md`
-   (1).
+7. Re-read `references/upstream.md`; each repository there must appear
+   in `docs/05-attribution.md` or in `docs/00-repository-synthesis.md`.
 
 ## A. Upstream to design
 
-Rows 1 to 14 are the `upstream` array of `manifest.json`. Row 15 is
-listed in `docs/05-attribution.md` only. Link-only sources in
-`references/upstream.md` carry no design element and are not rows here.
+One row per credited upstream in the `manifest.json` upstream array, plus
+seven rows for the internal clusters F16 to F22, which no upstream evidences.
+The read-only reference repositories in `references/upstream.md` carry no
+design element and are not rows here.
 
 | Upstream | Failure / conflict | Design element | Implemented in | Verify |
 |---|---|---|---|---|
@@ -44,13 +45,21 @@ listed in `docs/05-attribution.md` only. Link-only sources in
 | `meta-quest/agentic-tools` | F3, F8 | verify-first pre-flight; incremental setup | `skills/unity-loom/SKILL.md` [pre-flight]; `references/claims.md` | pre-flight precedes routing; claims carry a version |
 | `CoplayDev/unity-mcp` | F1, F2, F4, F5 | optional adapters; freshness gate; response budget | `doctrine/02-capabilities.md` [tiers]; `doctrine/03-state-freshness.md` [the gate]; `doctrine/04-responses.md` [output budget] | tier table, gate and output cap present |
 | `JulianKerignard/Unity-Skills` | C2, C3, C8 | decision trees; unique `loom-*` namespace; tiered tests | `skills/loom-project/SKILL.md` [pick the pattern]; `manifest.json`; `docs/03-decision-records.md` [ADR-0011] | every skill name starts with `loom-` |
-| `MuharremTozan/unity-agent-skills` | pattern sprawl | one curated anti-pattern table | `references/anti-patterns.md` | each row cites a governing ADR or claim |
+| `MuharremTozan/unity-agent-skills` | pattern sprawl | one curated anti-pattern table | `references/anti-patterns.md` | each row names a claim, a doctrine, an ADR or a skill |
 | `alphaonedev/openclaw-graph` | C1 | one XR dialect plus a compatibility appendix | `references/xr-dialect.md` [naming, compatibility appendix] | the dialect lists current names only |
 | `marcosotomac/unity-ai` | F2, F15 | observe, act, verify loop | `doctrine/03-state-freshness.md` [the gate, after acting] | the gate comes first, then the read-back |
 | `Unity-Technologies/arfoundation-samples` | F14 | AR setup checklist plus a triage table | `workflows/xr.md` [failure triage] | the triage table maps symptom to check |
-| `Unity-Technologies/XR-Interaction-Toolkit-Examples` | F13 | interaction lifecycle contract; resume procedure | `references/xr-dialect.md` [interaction lifecycle]; `skills/loom-xr/SKILL.md` [interaction lifecycle] | five transitions and resume steps present |
+| `Unity-Technologies/XR-Interaction-Toolkit-Examples` | F13 | interaction lifecycle contract; resume procedure | `references/xr-dialect.md` [interaction lifecycle]; `skills/loom-xr/SKILL.md` [one owner] | five transitions and resume steps present |
 | `VRMADA/ultimatexr-unity` | F13 SDK churn, hands | SDK compatibility gates; MR track | `skills/loom-xr/SKILL.md` [setup checklist]; `workflows/xr.md` [Track C - MR] | a version check follows every SDK upgrade |
 | `jack-arturo/skillissue` | F2, F15 | one graduated build and verify ship path | `workflows/release.md` [verification, build phases] | the ship phases carry gates |
+| `skillsdirectory.com` → Claude Dev Suite `unity-xr` | C1, C8 | the XR naming landscape, read to confirm the dialect | `references/xr-dialect.md` [naming] | the dialect lists current names only |
+| Internal rule set (no upstream) | F16 | blocking secret scan, redacted findings, an explicit allowlist marker | `tools/validate.mjs` [secrets rule]; `doctrine/01-safety.md` [secrets] | a credential-shaped string fails the run | `node tools/validate.mjs` |
+| Internal trigger vocabulary (no upstream) | F17 | one trigger list materialised in three places and compared byte-for-byte | `tools/validate.mjs` [trigger-drift rule]; `skills/unity-loom/SKILL.md` [routing table] | a trigger in one place only fails the run | `node tools/validate.mjs` |
+| The validator itself (no upstream) | F18 | the checker self-tests over synthetic bad and good input in CI | `tools/validate.mjs` [--selftest] | the self-test table is green | `node tools/validate.mjs --selftest` |
+| Internal secret rule (no upstream) | F19 | a generated file is a secret carrier; the staged diff is scanned before every commit | `doctrine/01-safety.md` §2; `doctrine/06-collaboration.md` §4; `tools/validate.mjs` (secret scan) | the finding is reported redacted | `node tools/validate.mjs` |
+| Internal ownership rule (no upstream) | F20 | one owner per file at a time, one worktree per agent, a dirty tree reported before use | `doctrine/06-collaboration.md` §2, §3, §8 | another agent's change is reported, never overwritten | open the cited section |
+| Internal test rule (no upstream) | F21 | a behaviour change carries a test that fails without it; a test that cannot fail is not a test | `doctrine/07-quality.md` §1, §2, §8; `doctrine/03-state-freshness.md` (observable verification) | every workflow ends with a `Done when` gate that names the proof | `node tools/validate.mjs` |
+| Internal measurement rule (no upstream) | F22 | a claim about speed or memory names the capture it came from, and the capture names the device | `doctrine/07-quality.md` §4; `doctrine/02-capabilities.md` (tiers); `workflows/performance.md` | a result not obtained on the target is recorded as unverified on hardware | `node tools/perf-budget.mjs --metrics artifacts/perf/latest/metrics.json --max-p95-ms <budget-ms>` |
 
 ## B. Failure mode to mitigation
 
@@ -60,20 +69,24 @@ listed in `docs/05-attribution.md` only. Link-only sources in
 | F2 | stale editor state | refresh, compile, read, act, read back | `doctrine/03-state-freshness.md` [the gate, after acting]; `references/adapters.md` [editor-bridge failure signatures] | compile reaches zero errors; read-back matches | open the cited section |
 | F3 | setup and install sprawl | one install path; generated manifests; CI link checks | `README.md`; `manifest.json`; `tools/validate.mjs` | the orphan check fails on any unlisted file | `node tools/validate.mjs` |
 | F4 | hard dependencies | zero-requirement core; optional adapters; downgrade | `doctrine/02-capabilities.md` [tiers]; `references/adapters.md` [adapter map]; `manifest.json` [adapters] | core skills work with a text editor alone | open the cited section |
-| F5 | context bloat | filter, paginate, summarize, hard cap | `doctrine/04-responses.md` [output budget, paginate] | a summary is 30 lines; a list is 25 items | open the cited section |
+| F5 | context bloat | filter, paginate, summarize, hard cap | `doctrine/04-responses.md` [output budget, paginate] | the caps in the doctrine hold for every class of output | open the cited section |
 | F6 | frontmatter or YAML failure | single-line quoted description, 1024 characters or fewer | `tools/validate.mjs` [frontmatter rules] | an unquoted or long description fails the run | `node tools/validate.mjs` |
-| F7 | non-executable instructions | executable-only rule; `HUMAN HANDOFF` block | `doctrine/00-precedence.md` [executability] | the GUI-phrase scan finds no GUI step | `node tools/validate.mjs` |
-| F8 | incorrect or overgeneralized claims | claim registry with a source and a version | `references/claims.md`; `docs/03-decision-records.md` [ADR-0012] | every claim row has a source and a version | open the cited section |
+| F7 | non-executable instructions | executable-only rule; `HUMAN HANDOFF` block | `doctrine/00-precedence.md` [executability]; `doctrine/01-safety.md` [handoff block] | the GUI-phrase scan finds no GUI step | `node tools/validate.mjs` |
+| F8 | incorrect or overgeneralized claims | claim registry with a source and a version | `references/claims.md`; `docs/03-decision-records.md` [ADR-0012] | every claim row has a source and a version, and every id is cited at least once | open the cited section |
 | F9 | tooling breaks the Editor | no auto-running hooks; bounded state; opt-in only | `doctrine/05-non-invasiveness.md` [forbidden by default, bounded state] | the repo ships no hook | open the cited section |
 | F10 | asset and GUID collisions | no Unity package assets in v1 | `docs/01-product-idea.md` [non-goals]; `doctrine/05-non-invasiveness.md` [nothing ships by default] | no file with a `.meta` extension exists | list the repository files |
 | F11 | cross-platform and CRLF failures | normalize before measuring; three-OS CI | `tools/validate.mjs`; `.github/workflows/ci.yml` | budgets are computed on normalized text | the CI matrix lists three runners |
 | F12 | missing or drifting references | link-check every relative link and manifest path | `tools/validate.mjs` | a broken link fails the build | `node tools/validate.mjs` |
-| F13 | XR interaction lifecycle bugs | lifecycle contract, resume procedure, SDK gates | `skills/loom-xr/SKILL.md` [interaction lifecycle]; `references/xr-dialect.md` [interaction lifecycle]; `workflows/xr.md` [resume and focus] | destroy-while-selected and resume are explicit | open the cited section |
+| F13 | XR interaction lifecycle bugs | lifecycle contract, resume procedure, SDK gates | `references/xr-dialect.md` [interaction lifecycle]; `skills/loom-xr/SKILL.md` [one owner]; `workflows/xr.md` [resume and focus] | destroy-while-selected and resume are explicit | open the cited section |
 | F14 | AR session and visual failures | deterministic setup checklist plus triage table | `workflows/xr.md` [session and provider, failure triage] | black screen and jitter rows exist | open the cited section |
 | F15 | verification paradoxes | observable evidence only; no hidden hooks | `doctrine/03-state-freshness.md` [observable verification]; `doctrine/05-non-invasiveness.md` [no ambient side effects] | every workflow ends with a `Done when` proof | `node tools/validate.mjs` |
 | F16 | secret leakage | blocking secret scan, redacted findings, explicit allowlist marker | `tools/validate.mjs` [secrets rule]; `doctrine/01-safety.md` [secrets] | a credential-shaped string fails the run, printed redacted | `node tools/validate.mjs` |
 | F17 | routing drift and trigger collisions | one trigger vocabulary, materialised in three places and compared byte-for-byte | `tools/validate.mjs` [trigger-drift rule]; `skills/unity-loom/SKILL.md` [routing table] | a trigger in one place and not the others fails the run | `node tools/validate.mjs` |
 | F18 | the checker rots | the validator runs every rule over synthetic bad and good input in CI | `tools/validate.mjs` [--selftest]; `.github/workflows/ci.yml` | the self-test table is green on every push | `node tools/validate.mjs --selftest` |
+| F19 | an agent commits a secret | secrets read from the environment or a config outside the repository; a generated file is a secret carrier; the staged diff is scanned before every commit | `doctrine/01-safety.md` §2; `doctrine/06-collaboration.md` §4; `tools/validate.mjs` (secret scan); `.github/workflows/ci.yml` (the `secrets` job) | the finding is reported redacted and the credential never reaches the commit | `node tools/validate.mjs` |
+| F20 | two agents, one file | one owner per file at a time, one worktree per agent; a dirty tree is reported file by file before it is used; a file two agents must change is split first | `doctrine/06-collaboration.md` §2, §3, §8 | a merge that touches another agent's file is reported, not resolved silently | open the cited section |
+| F21 | a change shipped with no test | a change is finished when a test, a log line or a build proves it; a behaviour change carries one test that fails without it and passes with it | `doctrine/07-quality.md` §1, §2, §8; `doctrine/03-state-freshness.md` (observable verification); `tools/validate.mjs` (workflow gates) | every workflow ends with a `Done when` gate that names the proof | `node tools/validate.mjs` |
+| F22 | a desktop measurement shipped to a device | a claim about speed or memory names the capture it came from, and the capture names the device, the build and the scene | `doctrine/07-quality.md` §4; `doctrine/03-state-freshness.md` (read-back); `doctrine/02-capabilities.md` (tiers); `workflows/performance.md`; `tools/perf-budget.mjs` | the device capture is a gate and the budget guard runs on the real metrics file | `node tools/perf-budget.mjs --metrics artifacts/perf/latest/metrics.json --max-p95-ms <budget-ms>` |
 
 Cluster numbering follows `docs/04-failure-modes.md`; the enforcing
 artifact and the proof are named here.
@@ -87,7 +100,7 @@ artifact and the proof are named here.
 | C3 | `Resources` versus Addressables | Julian versus code samples | ADR-0001 | `references/anti-patterns.md`; `skills/loom-project/SKILL.md` [red lines] | the `Resources` rule is named in both |
 | C4 | singleton versus dependency injection | Tozan versus Nice Wolf | ADR-0002 | `references/anti-patterns.md`; `skills/loom-project/SKILL.md` [architecture defaults] | the composition default is stated |
 | C5 | coroutine versus `Awaitable` versus UniTask | Nice Wolf versus the other packs | ADR-0003 | `skills/loom-project/SKILL.md` [architecture defaults] | the async default names ADR-0003 |
-| C6 | smooth locomotion versus teleport and comfort | generic guides versus comfort guidance | ADR-0006 | `skills/loom-xr/SKILL.md` [comfort defaults]; `references/xr-dialect.md` | teleport, snap turn and vignette are default |
+| C6 | smooth locomotion versus teleport and comfort | generic guides versus comfort guidance | ADR-0006 | `docs/03-decision-records.md` [ADR-0006]; `skills/loom-xr/SKILL.md` [comfort] | the default is stated once, in ADR-0006 |
 | C7 | XRI 2.x versus XRI 3.x dialect | Besty0728 versus Nice Wolf and Unity | ADR-0005 | `references/xr-dialect.md` [compatibility appendix] | one dialect plus one mapping table |
 | C8 | identical skill names in several packs | Nice Wolf vs Julian vs openclaw-graph | ADR-0012 | `manifest.json` [skills] | every skill uses the `loom-` namespace |
 | C9 | latest tooling versus pinned content | Unity CLI versus plugin drift | ADR-0004 | `references/claims.md`; skill `metadata.verified-against` | each claim records a version |
@@ -98,7 +111,22 @@ artifact and the proof are named here.
 Each conflict is decided once, in `docs/03-decision-records.md`. The
 implementing artifact is where the decision is visible at work.
 
-## D. Gaps: what is not enforced automatically
+## D. Decision record to cluster settled
+
+The records that settle a conflict are in table C. The ones that settle a
+failure cluster, or a gap in the record itself, are here.
+
+| ADR | Conflict or failure cluster settled | Implementing artifact | Verify |
+|---|---|---|---|
+| ADR-0018 | F4, and the architectural gap that the repository's largest decision had no decision record | `doctrine/02-capabilities.md` [tiers]; `references/adapters.md` [adapter map] | the tier table names T0 to T3 |
+| ADR-0019 | F5, the context-bloat cluster, and F6, the silent-skill-death cluster | `doctrine/04-responses.md` [output budget]; `manifest.json` [budgets] | the caps and the file budgets hold |
+| ADR-0020 | F2, the stale-state cluster, and F15, the verification-paradox cluster | `doctrine/07-quality.md` [what to test, and how]; `workflows/release.md` [verification] | a change ships a test at the cheapest layer that can prove it |
+| ADR-0021 | C8, and specifically the `ui`, `ui-ugui` and `ui-uitk` split it exposed | `skills/loom-ui-audio/SKILL.md` [pick the approach]; `workflows/ui-audio.md` | one screen, one stack, one input model |
+| ADR-0022 | the conflation in `doctrine/01-safety.md` §9.1, and F3 | `doctrine/01-safety.md` §9.1; `workflows/release.md` [privacy] | the agent's own tooling sends nothing |
+| ADR-0023 | F12, the missing-and-drifting-reference cluster, and F16, the secret-leakage cluster | `doctrine/06-collaboration.md`; `tools/validate.mjs` | one owner per file, and a secret finding reported redacted |
+| ADR-0024 | F8, the incorrect-claim cluster, and F15, the verification-paradox cluster | `doctrine/07-quality.md` [error handling, determinism] | no silent catch, and a fixed seed |
+
+## E. Gaps: what is not enforced automatically
 
 The validator checks structure, size, links, triggers and safety phrases.
 It does **not** check meaning. These elements are enforced by doctrine
@@ -111,21 +139,28 @@ and review only, and are the weakest links in this map.
 | F3 install path | the install command is never executed by CI; `README.md` text only |
 | F4 zero-requirement core | no rule forbids a skill naming a required tool; the tier table is prose |
 | F5 response budget | tool output is not measured; `doctrine/04-responses.md` only |
-| F8 claim coverage | the registry is not checked against skill text; manual audit |
+| F8 claim coverage | every claim id in the registry is cited by at least one skill or workflow; the ten editor-state ids are cited by `doctrine/03-state-freshness.md` instead, and the check is a grep over `skills/`, `workflows/` and `doctrine/`, not a validator rule |
 | F10 GUID registry | the registry does not exist yet; `docs/01-product-idea.md` [non-goals] |
 | F13 XR correctness | no machine check of XR API names; `references/xr-dialect.md` review |
 | F14 AR triage | the triage table is never exercised; `workflows/xr.md` review |
 | ADR defaults | ADRs are cited, not enforced; `doctrine/00-precedence.md` [common conflicts] |
-| Upstream licences | several rows read "confirm at review"; `references/upstream.md` review |
+| Upstream licences | the licence token is "check upstream" until a row is checked; `references/upstream.md` review |
 | Workflow gates | `Done when` must exist, not be met; `tools/validate.mjs` |
 | Secret placement | the scan matches credential *shapes*; a secret split across lines or spelled oddly is not caught; `tools/validate.mjs` [secrets] |
 | Trigger semantics | drift and collisions are caught; whether a trigger *deserves* to be owned by a skill is a judgement; `manifest.json` review |
 
-## E. Coverage
+## F. Coverage
 
-Table A has 15 rows: the 14 upstreams in the `manifest.json` array plus
-one upstream listed only in `docs/05-attribution.md`. Table B has 18 rows,
-one per cluster F1 to F18. Table C has 12 rows, one per conflict
-in the register of `docs/00-repository-synthesis.md` (5), each decided
-in `docs/03-decision-records.md`. Table D has 14 rows, a self-audit of
+Table A has one row per upstream in the `upstream` array of `manifest.json`,
+plus seven rows for the internal clusters F16 to F22, so every failure
+cluster from F1 to F22 has a row somewhere in the map.
+
+The ledger in `references/upstream.md` has one row per upstream we read: the
+credited upstreams of the `manifest.json` array, plus 17 read-only reference
+repositories that carry no design element and therefore have no row in table A.
+
+Table B has 22 rows, one per cluster F1 to F22. Table C has 12 rows, one per
+conflict in the register of `docs/00-repository-synthesis.md` (5), each decided
+in `docs/03-decision-records.md`. Table D has 7 rows, one per decision record
+from ADR-0018 to ADR-0024. Table E has 14 rows, a self-audit of
 what the validator does not cover.

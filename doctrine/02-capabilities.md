@@ -76,10 +76,16 @@ A downgrade changes the proof you can offer; name the proof given up.
 
 ## 7. Recording the tier
 
-State it once up front, so the user knows the verification quality.
+The **operating tier** is per task: one tier is chosen for the work, and it is
+stated in the answer, in one line, together with the probe output that supports it.
+A tier is never claimed without that output.
+
+Every individual measurement carries its own tier and reports it with the
+measurement. A device capture taken while the edit itself was made at T2 is a T3
+measurement, and it is quoted as one.
 
 ```text
-Operating at T2 (live-editor: Unity MCP, project <path>, Unity 6000.3.12f1)
+Operating tier for this task: T2 (live-editor: Unity MCP, project <path>, Unity 6000.3.12f1)
 Probes: T3 adb -> absent | T2 bridge health -> ok | T1 unity --version -> 6000.3.12f1
 Fallback if the editor closes: T1 (unity CLI present)
 ```
@@ -95,4 +101,3 @@ Fallback if the editor closes: T1 (unity CLI present)
 - A tier is a *means*, not a goal: pick the lowest that suffices.
 - Live editor state needs T2; T1 and T0 substitute a build.
 - Device truth needs T3; below it the answer is a model, not fact.
-- Report the tier with the answer, not before it.

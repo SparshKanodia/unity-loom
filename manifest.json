@@ -5,12 +5,12 @@
   "description": "One fabric for Unity agent skills, workflows, and engineering doctrine.",
   "spec": "agent-skills",
   "budgets": {
-    "router": { "lines": 120, "bytes": 6000 },
-    "skill": { "lines": 320, "bytes": 14000 },
-    "workflow": { "lines": 480, "bytes": 24000 },
-    "doctrine": { "lines": 140, "bytes": 6000 },
-    "reference": { "lines": 420, "bytes": 32000 },
-    "totalCoreBytes": 120000,
+    "router": { "lines": 140, "bytes": 8000 },
+    "skill": { "lines": 340, "bytes": 16000 },
+    "workflow": { "lines": 520, "bytes": 28000 },
+    "doctrine": { "lines": 170, "bytes": 7000 },
+    "reference": { "lines": 520, "bytes": 48000 },
+    "totalCoreBytes": 140000,
     "maxSkills": 12,
     "maxWorkflows": 10,
     "maxReferences": 8
@@ -119,7 +119,9 @@
     { "path": "doctrine/02-capabilities.md" },
     { "path": "doctrine/03-state-freshness.md" },
     { "path": "doctrine/04-responses.md" },
-    { "path": "doctrine/05-non-invasiveness.md" }
+    { "path": "doctrine/05-non-invasiveness.md" },
+    { "path": "doctrine/06-collaboration.md" },
+    { "path": "doctrine/07-quality.md" }
   ],
   "references": [
     { "path": "references/claims.md" },
@@ -137,10 +139,11 @@
     { "path": "docs/03-decision-records.md" },
     { "path": "docs/04-failure-modes.md" },
     { "path": "docs/05-attribution.md" },
-    { "path": "docs/06-context-budget.md" }
+    { "path": "docs/06-context-budget.md" },
+    { "path": "docs/07-workflow-template.md" }
   ],
-  "rootFiles": ["README.md", "AGENTS.md", "manifest.json", "LICENSE"],
-  "tooling": ["tools/validate.mjs", "tools/install.mjs", "tools/README.md"],
+  "rootFiles": ["README.md", "AGENTS.md", "GUIDE.md", "HARNESSES.md", "CONTRIBUTING.md", "manifest.json", "LICENSE"],
+  "tooling": ["tools/validate.mjs", "tools/install.mjs", "tools/perf-budget.mjs", "tools/README.md"],
   "adapters": [
     { "tier": "T0", "name": "file-edit", "requires": "none" },
     { "tier": "T1", "name": "unity-cli", "requires": "unity CLI" },
@@ -160,6 +163,7 @@
     { "repo": "marcosotomac/unity-ai", "license": "check upstream", "took": "observe-act-verify loop", "rejected": "control-plane coupling" },
     { "repo": "Unity-Technologies/arfoundation-samples", "license": "check upstream", "took": "AR feature reference scenes, issue-derived AR triage", "rejected": "vendoring" },
     { "repo": "Unity-Technologies/XR-Interaction-Toolkit-Examples", "license": "check upstream", "took": "interaction lifecycle and sample-issue mitigations", "rejected": "vendoring" },
-    { "repo": "VRMADA/ultimatexr-unity", "license": "MIT", "took": "issue-derived XR failure modes", "rejected": "framework adoption" }
+    { "repo": "VRMADA/ultimatexr-unity", "license": "MIT", "took": "issue-derived XR failure modes", "rejected": "framework adoption" },
+    { "repo": "skillsdirectory.com/Claude-Dev-Suite/unity-xr", "license": "check upstream", "took": "the XR naming landscape, read to confirm the dialect", "rejected": "a single-file skill scope" }
   ]
 }

@@ -16,10 +16,19 @@ review cadence.
   licence, not an OSI open-source licence, and it does not grant the
   right to redistribute upstream code. We therefore take **no code, no
   prose, and no asset** from them.
-- The remaining Unity-Technologies sample and reference repositories are
-  recorded as "check upstream" in `manifest.json`. They stay
-  **"confirm at review"** in this ledger until each licence is checked
-  individually; they are read-only references.
+- **The token `check upstream` is the only token for an unchecked licence.** It
+  means the licence file of that row has not been read yet. It appears in this
+  ledger, in the `upstream` array of `manifest.json` and in
+  `docs/05-attribution.md`, and it is replaced by the exact licence name once
+  the row is checked. No other phrase is used for the same state.
+- Of the twelve Unity-Technologies repositories in the ledger, only two are in
+  the `manifest.json` upstream array with this token
+  (`arfoundation-samples` and `XR-Interaction-Toolkit-Examples`). The other
+  eight appear in this ledger only, because they were read as reference rather
+  than credited with a design element: DOTS scope guidance, render-pipeline
+  scope and budgets, agent-simulation scope, input-action guidance, the API
+  behaviour behind the claim registry, navigation scope, multiplayer scope and
+  robotics scope.
 - Repos whose licence is unknown, `NOASSERTION`, or copyleft (for
   example `michidk/Unity-Script-Collection`, GPL-3.0) are **read for
   awareness only** and never reproduced.
@@ -35,33 +44,38 @@ One row per upstream project. `Landed in` is the file in this
 repository that carries the idea. Every project is a GitHub repository,
 so its canonical link is `https://github.com/<org>/<repo>` built from
 the slug in the first column; a slug that cannot be verified against
-the upstream file tree is confirmed at review before it is quoted
-anywhere else, and the licence cell says so too.
+the upstream file tree carries the licence token `check upstream` until
+the row is checked, and it is quoted nowhere else until then.
+
+The `Idea taken` and `Rejected` cells match the `took` and `rejected`
+fields of the `upstream` array in `manifest.json`, so the manifest is a
+faithful projection of this ledger. A failure or conflict id in
+brackets is a pointer, not a difference.
 
 | Project | What it is | Licence | Idea taken | Rejected, and why | Landed in |
 |---|---|---|---|---|---|
-| `Unity-Technologies/skills` | Unity's official agent skill set | Unity Companion License | editor-driven CLI workflow; skill granularity | vendoring; three drifting channels (F3, F12) | `doctrine/03-state-freshness.md`; `tools/validate.mjs` |
-| `Unity-Technologies/unity-agent-plugin` | the same skills packaged as agent plugins | Unity Companion License | one distributable package | per-client manifests that drift | `manifest.json`; `README.md` |
-| `Nice-Wolf-Studio/unity-claude-skills` | 35 tiered Unity skills | MIT | correctness, architecture, design-intent tiering; XR coverage | GUI steps (F7); harness hook testbed (F15) | `skills/unity-loom/SKILL.md`; `skills/loom-xr/SKILL.md` |
-| `Besty0728/Unity-Skills` | about 85 modules behind a UPM pack and a Python bridge | MIT | anti-hallucination guardrails; collider matrix; operating modes | reflection-only bridge (C11); invasive editor hooks (F9) | `references/claims.md`; `references/xr-dialect.md`; `doctrine/05-non-invasiveness.md` |
-| `mflRevan/unity-control-protocol` | a CLI and bridge with a generated skill catalog | MIT | generated catalog; visual feedback; omni and surface split | hard CLI and bridge dependency (F4) | `manifest.json`; `workflows/performance.md` |
-| `meta-quest/agentic-tools` | Horizon OS skills plus device tooling | Apache-2.0 | verify-first pre-flight; device and MR tooling | all-or-nothing setup (F3) | `skills/unity-loom/SKILL.md`; `workflows/xr.md` |
-| `CoplayDev/unity-mcp` | an MCP server and Unity package with 50+ tools | MIT | editor bridge tool surface; the issue corpus behind F1 to F5 | hard Python and uv dependency (F4) | `doctrine/02-capabilities.md`; `doctrine/03-state-freshness.md`; `doctrine/04-responses.md` |
-| `JulianKerignard/Unity-Skills` | 18 skills built around decision trees | MIT | decision trees; hard rules; prototype gradient | colliding `unity-*` names (C8) | `skills/loom-project/SKILL.md`; `manifest.json` |
-| `MuharremTozan/unity-agent-skills` | GoF and architecture pattern skills | confirm at review | pattern-library organisation | pattern sprawl (one fact, one place) | `references/anti-patterns.md` |
-| `alphaonedev/openclaw-graph` | a graph-native skill store | confirm at review | skills as data | deprecated XR API examples (C1) | `references/xr-dialect.md` |
-| `marcosotomac/unity-ai` | an MCP and Editor control plane | confirm at review | observe, act, verify loop | control-plane coupling (F4) | `doctrine/03-state-freshness.md` |
-| `jack-arturo/skillissue` | a focused Quest build and verify skill | confirm at review | one specialised build-verify path | nothing recorded | `workflows/release.md` |
-| `Unity-Technologies/arfoundation-samples` | AR Foundation sample scenes | confirm at review | AR feature reference; AR triage inputs | vendoring (F10) | `workflows/xr.md` |
-| `Unity-Technologies/XR-Interaction-Toolkit-Examples` | XRI example scenes | confirm at review | interaction lifecycle; sample-derived mitigations | vendoring (F10) | `references/xr-dialect.md` |
-| `Unity-Technologies/EntityComponentSystemSamples` | DOTS sample scenes | confirm at review | DOTS scope guidance only | vendoring (F10) | `docs/01-product-idea.md` (7) |
-| `Unity-Technologies/Graphics` | the URP and HDRP source tree | confirm at review | render pipeline scope and budgets | vendoring (F10) | `skills/loom-graphics/SKILL.md` |
-| `Unity-Technologies/ml-agents` | the ML-Agents training framework | confirm at review | agent simulation scope | vendoring (F10) | `skills/loom-simulation/SKILL.md` |
-| `Unity-Technologies/InputSystem` | the Input System package | confirm at review | input action guidance | vendoring (F10) | `skills/loom-ui-audio/SKILL.md` |
-| `Unity-Technologies/UnityCsReference` | the C# reference source | confirm at review | API truth behind the claim registry | vendoring (F10) | `references/claims.md` |
-| `Unity-Technologies/NavMeshComponents` | the navigation package | confirm at review | navigation scope | vendoring (F10) | `skills/loom-3d/SKILL.md` |
-| `Unity-Technologies/com.unity.multiplayer.samples.coop` | Netcode cooperation samples | confirm at review | multiplayer scope | vendoring (F10) | `skills/loom-project/SKILL.md` |
-| `Unity-Technologies/Unity-Robotics-Hub` | ROS 2 bridge samples | confirm at review | robotics simulation scope | vendoring (F10) | `skills/loom-simulation/SKILL.md` |
+| `Unity-Technologies/skills` | Unity's official agent skill set | Unity Companion License | editor-driven workflow concept, skill granularity | vendoring (F3, F12) | `doctrine/03-state-freshness.md`; `tools/validate.mjs` |
+| `Unity-Technologies/unity-agent-plugin` | the same skills packaged as agent plugins | Unity Companion License | packaging concept | three drift-prone channels (F3, F12) | `manifest.json`; `README.md` |
+| `Nice-Wolf-Studio/unity-claude-skills` | 35 tiered Unity skills | MIT | correctness/architecture/design-intent tiering, XR topical coverage | GUI instructions, hook testbed (F7, F15) | `skills/unity-loom/SKILL.md`; `skills/loom-xr/SKILL.md` |
+| `Besty0728/Unity-Skills` | about 85 modules behind a UPM pack and a Python bridge | MIT | anti-hallucination guardrails, collider matrix, operating modes | reflection-only bridge (C11), invasive editor hooks (F9) | `references/claims.md`; `references/xr-dialect.md`; `doctrine/05-non-invasiveness.md` |
+| `mflRevan/unity-control-protocol` | a CLI and bridge with a generated skill catalog | MIT | generated catalog, visual feedback, omni/surface split | hard CLI+bridge dependency (F4) | `manifest.json`; `workflows/performance.md` |
+| `meta-quest/agentic-tools` | Horizon OS skills plus device tooling | Apache-2.0 | verify-first pre-flight, MR/device tooling concepts | all-or-nothing setup (F3) | `skills/unity-loom/SKILL.md`; `workflows/xr.md` |
+| `CoplayDev/unity-mcp` | an MCP server and Unity package with 50+ tools | MIT | editor bridge tool surface, issue-derived failure modes | hard Python/uv dependency (F4) | `doctrine/02-capabilities.md`; `doctrine/03-state-freshness.md`; `doctrine/04-responses.md` |
+| `JulianKerignard/Unity-Skills` | 18 skills built around decision trees | MIT | decision trees, hard rules, prototype gradient | colliding unity-* names (C8) | `skills/loom-project/SKILL.md`; `manifest.json` |
+| `MuharremTozan/unity-agent-skills` | GoF and architecture pattern skills | check upstream | pattern library organisation | pattern sprawl (one fact, one place) | `references/anti-patterns.md` |
+| `alphaonedev/openclaw-graph` | a graph-native skill store | check upstream | skills-as-data idea | deprecated XR API examples (C1) | `references/xr-dialect.md` |
+| `marcosotomac/unity-ai` | an MCP and Editor control plane | check upstream | observe-act-verify loop | control-plane coupling (F4) | `doctrine/03-state-freshness.md` |
+| `jack-arturo/skillissue` | a focused Quest build and verify skill | check upstream | graduated build and verify ship path | single-focus skill | `workflows/release.md` |
+| `Unity-Technologies/arfoundation-samples` | AR Foundation sample scenes | check upstream | AR feature reference scenes, issue-derived AR triage | vendoring (F10) | `workflows/xr.md` |
+| `Unity-Technologies/XR-Interaction-Toolkit-Examples` | XRI example scenes | check upstream | interaction lifecycle and sample-issue mitigations | vendoring (F10) | `references/xr-dialect.md` |
+| `Unity-Technologies/EntityComponentSystemSamples` | DOTS sample scenes | check upstream | DOTS scope guidance only | vendoring (F10) | `docs/01-product-idea.md` (7) |
+| `Unity-Technologies/Graphics` | the URP and HDRP source tree | check upstream | render pipeline scope and budgets | vendoring (F10) | `skills/loom-graphics/SKILL.md` |
+| `Unity-Technologies/ml-agents` | the ML-Agents training framework | check upstream | agent simulation scope | vendoring (F10) | `skills/loom-simulation/SKILL.md` |
+| `Unity-Technologies/InputSystem` | the Input System package | check upstream | input action guidance | vendoring (F10) | `skills/loom-ui-audio/SKILL.md` |
+| `Unity-Technologies/UnityCsReference` | the C# reference source | check upstream | API truth behind the claim registry | vendoring (F10) | `references/claims.md` |
+| `Unity-Technologies/NavMeshComponents` | the navigation package | check upstream | navigation scope | vendoring (F10) | `skills/loom-3d/SKILL.md` |
+| `Unity-Technologies/com.unity.multiplayer.samples.coop` | Netcode cooperation samples | check upstream | multiplayer scope | vendoring (F10) | `skills/loom-project/SKILL.md` |
+| `Unity-Technologies/Unity-Robotics-Hub` | ROS 2 bridge samples | check upstream | robotics simulation scope | vendoring (F10) | `skills/loom-simulation/SKILL.md` |
 | `VRMADA/ultimatexr-unity` | a community XR framework | MIT | issue-derived XR failure modes (F13) | framework adoption | `skills/loom-xr/SKILL.md` |
 | `ExtendRealityLtd/VRTK` | a legacy VR interaction framework | MIT | legacy interaction design reference | adoption (legacy, unmaintained) | `references/xr-dialect.md` |
 | `microsoft/MixedRealityToolkit-Unity` | a legacy MR toolkit | MIT | MR interaction reference | adoption (legacy, unmaintained) | `workflows/xr.md` |
@@ -70,8 +84,9 @@ anywhere else, and the licence cell says so too.
 | `StefanoCecere/awesome-opensource-unity` | an awesome list of Unity projects | CC0-1.0 | category taxonomy | copying entries | `manifest.json` (domains) |
 | `UnityCommunity/AwesomeUnityCommunity` | a community awesome list | CC0-1.0 | category taxonomy | copying entries | `manifest.json` (domains) |
 | `netpyoung/awesome-unity-free` | a list of free Unity assets | MIT | the free-only filter idea | copying entries | `doctrine/02-capabilities.md` |
-| `jeffreylanters/awesome-unity-packages` | a list of Unity packages | confirm at review | OpenUPM orientation | copying entries | `workflows/foundation.md` (4) |
+| `jeffreylanters/awesome-unity-packages` | a list of Unity packages | check upstream | OpenUPM orientation | copying entries | `workflows/foundation.md` (4) |
 | `michidk/Unity-Script-Collection` | a script collection | GPL-3.0 (repo) | awareness only | any copying (copyleft) | `docs/05-attribution.md` |
+| `skillsdirectory.com` → Claude Dev Suite `unity-xr` | a skill directory listing one XR skill | check upstream | the XR naming landscape, read to confirm the dialect | a single-file skill scope | `references/xr-dialect.md` |
 
 ## No-vendoring rules
 
@@ -99,7 +114,7 @@ anything the pass surfaces.
    releases or changelog. Note any breaking API change, licence change,
    archive, or rename.
 2. For each Unity-Technologies row, confirm the licence file; replace
-   "confirm at review" with the exact licence name once it is known.
+   "check upstream" with the exact licence name once it is known.
 3. Compare each upstream default against our ADRs in
    `docs/03-decision-records.md`. If upstream moved, open a new ADR
    rather than editing a skill in place.

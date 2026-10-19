@@ -2,6 +2,8 @@
 
 Catalogue of the failure clusters found in the source repositories' issue trackers, each with its mitigation and the location that enforces it. Derived from `docs/00-repository-synthesis.md` §6.
 
+F1 to F15 come from the upstream issue trackers. F16 to F18 are the internal clusters no upstream evidences: the secret scan, the trigger vocabulary and the validator self-test. F19 to F22 come from the collaboration and quality doctrine, and are the failure modes that appear when more than one agent, or more than one machine, is involved.
+
 **Review cadence:** quarterly. A new structural failure requires an evidence link, a mitigation, and a traceability row.
 
 ---
@@ -115,6 +117,36 @@ Catalogue of the failure clusters found in the source repositories' issue tracke
 **Symptoms.** A rule silently stops being enforced (a renamed field, a changed file layout, a rule that no longer matches the content it inspects) while the build still reports green.
 **Mitigation.** The validator self-tests: synthetic bad inputs must trip each rule and a good input must trip none, executed in CI on every push. Rule changes are therefore behaviour changes, visible in the diff.
 **Enforced in.** `tools/validate.mjs` (`--selftest`), `.github/workflows/ci.yml`, `docs/03-decision-records.md` (ADR-0016).
+
+---
+
+## F19 — An agent commits a secret
+
+**Root cause.** The agent treats a file it generated as harmless, or copies a value it read from the environment into a configuration file inside the repository, and the commit carries the credential with it. The review looks at the code and not at the diff's values.
+**Symptoms.** A token, a device signing key, a licence string or a service-account field lands in the repository, in a commit, or in a generated report that was committed alongside it; the credential is then read back and echoed.
+**Mitigation.** Secrets are read from the environment or from a config outside the repository, never from a file that is about to be committed; a generated file is a secret carrier and is treated like one; the staged diff is scanned for credential-shaped strings before every commit; the validator scan blocks a tracked file and reports the finding redacted; the CI secret scan covers both the working tree and the whole history.
+**Enforced in.** `doctrine/01-safety.md` §2, `doctrine/06-collaboration.md` §4, `tools/validate.mjs` (secret scan), `.github/workflows/ci.yml` (the `secrets` job).
+
+## F20 — Two agents, one file
+
+**Root cause.** No ownership model, so two agents believe the same file is theirs; each writes from a state the other has not read, and one of the two changes is lost or silently overwritten.
+**Symptoms.** A change disappears after a merge; a conflict is resolved by the wrong owner; a file that one agent edited is reported clean by the other; two branches touch the same lines for different reasons.
+**Mitigation.** One owner per file at a time, and one worktree per agent; a dirty tree is reported file by file before it is used; an agent that needs a file it does not own asks for it; a file that two agents must change is split first; a merge that touches another agent's file is reported to that agent, not resolved silently.
+**Enforced in.** `doctrine/06-collaboration.md` §2, §3, §8.
+
+## F21 — A change shipped with no test
+
+**Root cause.** "It compiles" is treated as done, and no step names the evidence that would have caught the defect, so the change ships on the strength of an editor's opinion.
+**Symptoms.** A regression reaches a build or a device; a fix is reverted because nobody can say which behaviour it was meant to change; a flaky test is retried until it is green instead of being fixed.
+**Mitigation.** A change is finished when a test, a log line or a build proves it, and the evidence is named in the answer; a behaviour change carries one test that fails without it and passes with it; a test that cannot fail is not a test; a flaky test is a defect in the order dependence, not a test-list problem; every workflow ends with a `Done when` gate that names the proof.
+**Enforced in.** `doctrine/07-quality.md` §1, §2, §8, `doctrine/03-state-freshness.md` (observable verification), `tools/validate.mjs` (workflow gates).
+
+## F22 — A desktop measurement shipped to a device
+
+**Root cause.** The number was captured on a different machine, at a different capability tier, under a different frame budget, and it is carried to the target as if it applied there.
+**Symptoms.** The report claims a frame rate the device never reaches; a memory budget passes on the editor and fails on the handset; a thermal claim comes from a laptop that was never warm; the "fix" makes the device worse.
+**Mitigation.** A claim about speed or memory names the capture it came from, and the capture names the device, the build and the scene; the tier decides what can be measured, and a result that was not obtained on the target is recorded as unverified on hardware; the device capture is a gate in the performance workflow, and the budget guard runs on the real metrics file.
+**Enforced in.** `doctrine/07-quality.md` §4, `doctrine/03-state-freshness.md` (read-back), `doctrine/02-capabilities.md` (tiers), `workflows/performance.md`, `tools/perf-budget.mjs`.
 
 ---
 

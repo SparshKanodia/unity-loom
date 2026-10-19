@@ -2,6 +2,25 @@
 
 This file is written **for an AI coding agent**. Follow it exactly.
 
+## 0. Before you read anything else
+
+Read [GUIDE.md](GUIDE.md) first. It holds the answers to the recurring questions
+and the index of every file in this repository, so the common case costs one
+file instead of four.
+
+- GUIDE.md answers the pre-flight questions, routes a request to a skill and a
+  workflow, and names the file that owns each answer.
+- [HARNESSES.md](HARNESSES.md) holds the install matrix, one row per harness.
+- `node tools/install.mjs install --target <id>` installs the skills;
+  `node tools/install.mjs doctor --target <id>` proves the installation is
+  usable and `node tools/install.mjs verify --target <id>` proves it matches
+  the repository.
+- An installed skill reaches its workflow, its doctrine and its claims through
+  the shared corpus beside the skills directory. If a link inside a skill
+  dangles, the shared corpus is missing: reinstall with `tools/install.mjs`.
+- The precedence lattice is not restated here. It lives in
+  [doctrine/00-precedence.md](doctrine/00-precedence.md).
+
 ## 1. Entry point
 
 Always begin with `skills/unity-loom/SKILL.md` (the router). Do not open a domain skill first. The router's routing table is the canonical trigger vocabulary; `manifest.json` and each skill's frontmatter carry the same words, and the validator fails the build if the three ever disagree.

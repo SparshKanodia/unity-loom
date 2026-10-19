@@ -2,6 +2,28 @@
 
 Owner domain: [loom-ui-audio](../skills/loom-ui-audio/SKILL.md).
 Precondition: [foundation](foundation.md) is done.
+Template: [docs/07-workflow-template.md](../docs/07-workflow-template.md).
+
+## When to use
+
+- A menu, a HUD, a settings screen or a panel has to be built.
+- The interface has to scale between the smallest and the largest supported
+  aspect ratio without clipping.
+- Text has to be localized, and the font stack and the glyph coverage are
+  undecided.
+- The input actions, the control schemes or the rebinding screen are open.
+- The audio mixer, the snapshots or the source budget have to be decided.
+
+## When not to use
+
+- A request about the render pipeline, the interface materials or the font
+  atlas packing -> [graphics](graphics.md).
+- A request about a world-space interface inside a headset -> [xr](xr.md).
+- A request about sprites, tilemaps or pixel art -> [2d](2d.md).
+- A request about a training procedure, a score or a learning record ->
+  [simulation](simulation.md).
+- A request that the interface allocates every frame -> [performance](performance.md).
+- A request about packaging a build or the store -> [release](release.md).
 
 ## Before you start
 
@@ -19,12 +41,20 @@ Precondition: [foundation](foundation.md) is done.
   or are created below; the target languages and their writing
   direction are named.
 
-## Phase 1 — UI framework, theme and scale
+`docs/ui-audio-decision.md` and `docs/ui-audio-accessibility.md` are
+documents of the user's project, not of this repository. Phase 1 creates the
+decision file and phase 5 creates the accessibility file. One of them missing
+at the phase that needs it is a blocker to clear, not a broken link.
 
-- [ ] Choose the UI system: UI Toolkit for menus, HUD and settings (C-093),
-      uGUI for a world-space overlay, and never both on one canvas. Record
-      the reason in the decision file, and keep the view state in a view
-      model: the view never computes game rules.
+## Steps
+
+### Phase 1 — UI framework, theme and scale
+
+- [ ] Choose the UI system: UI Toolkit for menus, HUD, panels and settings
+      (C-093), and uGUI only for a world-space overlay in XR and in 3D.
+      Never both on one canvas. Record the reason in the decision file, and
+      keep the view state in a view model: the view never computes game
+      rules.
 - [ ] Create one panel settings asset holding the reference resolution,
       the scale mode and the texture size.
 - [ ] Create a theme sheet with the shared variables: spacing, radii,
@@ -47,7 +77,7 @@ Precondition: [foundation](foundation.md) is done.
 | Master volume | the audio mixer | one exposed parameter, read by the mixer (C-137) |
 | Tracked pointer in a headset | the XR input module | see the dialect file for the world case |
 
-## Phase 2 — Layout and assets
+### Phase 2 — Layout and assets
 
 - [ ] Write the layout so it scales from the smallest to the largest
       supported aspect ratio: anchor the root, size panels in percentage
@@ -64,7 +94,7 @@ Precondition: [foundation](foundation.md) is done.
 - **Gate:** the layout is clean at the smallest and the largest supported
   aspect ratio, and the profiler shows no allocation while scrolling.
 
-## Phase 3 — Text and localization
+### Phase 3 — Text and localization
 
 - [ ] Import the primary font as a font asset with a dynamic atlas and a
       fallback chain of the fonts that cover the missing scripts.
@@ -81,15 +111,17 @@ Precondition: [foundation](foundation.md) is done.
   pseudo-localization pass shows no clipped text, and the profiler shows
   no per-frame string allocation.
 
-## Phase 4 — Input
+### Phase 4 — Input
 
 - [ ] Define the action asset: one action map per context, with a
       control scheme for keyboard and mouse, gamepad, touch and, when
       relevant, a tracked device (C-094).
 - [ ] Map every action to the schemes that can drive it; an action with
       no gamepad binding is a defect, not a preference.
-- [ ] Build the rebinding screen on the same action asset and save the
-      binding to the user profile as a serialized asset (C-140).
+- [ ] Build the rebinding screen on the same action asset, and store the
+      override JSON in `PlayerPrefs` on the device with
+      `SaveBindingOverridesAsJson` (C-140, C-208). Never in the repository
+      and never as a project asset (C-209).
 - [ ] Give the interface an explicit focus order and a visible focus
       ring, and let the navigation actions move the focus. Keep the
       input consumption in one place, so a screen and the gameplay do
@@ -98,7 +130,7 @@ Precondition: [foundation](foundation.md) is done.
 - **Gate:** every action fires from every scheme it claims, the rebinding
   survives a restart, and the focus order is complete on every screen.
 
-## Phase 5 — Accessibility pass
+### Phase 5 — Accessibility pass
 
 - [ ] Run the checklist below and record the evidence for each row in
       `docs/ui-audio-accessibility.md`.
@@ -126,7 +158,7 @@ Precondition: [foundation](foundation.md) is done.
 | Reduced motion | transitions shortened or removed | a recording of the transition |
 | Focus order | an explicit order per screen | a recording of a keyboard walk |
 
-## Phase 6 — Audio graph
+### Phase 6 — Audio graph
 
 - [ ] Create the mixer with the groups Master, Music, SFX, Voice and UI,
       and route every source through a group. No source plays direct
@@ -151,6 +183,8 @@ Precondition: [foundation](foundation.md) is done.
 
 ### Audio budget
 
+Project default - tune against the peak voice count in the device capture.
+
 | Class | Group | Load type | Max voices | Rule |
 |---|---|---|---|---|
 | Music | Music | stream | 2 | loop points set, crossfade at the seam |
@@ -161,7 +195,7 @@ Precondition: [foundation](foundation.md) is done.
 
 The three load types in that table are the ones the importer offers: Decompress On Load, Compressed In Memory and Streaming (C-139).
 
-## Phase 7 — Verification
+### Phase 7 — Verification
 
 - [ ] Re-run the layout check at the smallest and the largest supported
       aspect ratio after every layout change, and profile the interface
@@ -173,26 +207,60 @@ The three load types in that table are the ones the importer offers: Decompress 
 - **Gate:** the verification record lists every screen, every action and
   every audio class, with no open item.
 
-## Handoff
+## Limitations
 
-- Interface cost, draw calls or allocation → [performance](performance.md).
-- A world-space interface inside a headset → [xr](xr.md).
-- Interface materials and the pipeline → [graphics](graphics.md); the
-  actions of a training procedure → [simulation](simulation.md).
+- The interface workflow does not own the render pipeline, the interface
+  materials or the font atlas packing; [graphics](graphics.md) owns those.
+- It does not own the world-space overlay inside a headset;
+  [xr](xr.md) owns that case.
+- It does not author the training content, the score or the learning
+  record; [simulation](simulation.md) owns those.
+- The voice budgets, the type scale and the layout rules are project
+  defaults, not engine limits. A project with more simultaneous dialogue
+  overrides them and records the override.
+- The accessibility checklist proves the checklist is satisfied. It does
+  not prove the interface is pleasant, and it does not replace testing
+  with the users the product is for.
+- The layout check runs at the two extreme aspect ratios. A layout that
+  breaks between them is not caught; the real check is the device pass.
+- A missing glyph is detected per language, not per weight or per font
+  style. A styled string that renders as a box still needs a human eye.
+- It does not localize the audio: a spoken line in a target language is
+  recorded, dubbed and mixed by a human, outside this workflow.
+
+## If a step fails
+
+1. Stop at the failing gate and keep the last good theme and mixer state.
+2. Revert the change that broke it: `git revert <sha>`, or restore the
+   theme sheet, the panel settings or the mixer asset from the last good
+   commit.
+3. Re-run the layout check, the pseudo-localization pass and the audio
+   burst script, and re-read their output to confirm the revert landed.
+4. Re-read the phase gate, then re-run the profiler capture for the
+   allocation evidence.
+5. If the evidence needs a human with a device, a player, or a native
+   speaker of the target language, emit a `HUMAN HANDOFF` block with What,
+   Why, Steps and Verify, and stop.
+6. If the same gate fails twice, write a deviation record: the gate, the
+   reason, who accepted it and the date.
 
 ## Done when
 
-- The UI system, the theme, the font stack and the mixer groups are in
-  the decision file.
-- Every screen scales between the smallest and the largest supported
-  aspect ratio with no clipping, and the theme variables are the only
-  source of colour and spacing.
-- Long lists recycle their items, and the profiler shows no per-frame
-  allocation from the interface or the text.
-- Every string resolves in every target language, the pseudo-localization
-  pass is clean, and the right-to-left screens mirror correctly.
-- Every action fires from every control scheme, the rebinding survives a
-  restart, and the focus order is complete on every screen. The
-  accessibility checklist has evidence for every row.
-- Every source routes through the mixer, the snapshots and the ducking
-  work, the budgets hold, and the worst-case burst does not clip.
+- [ ] The UI system, the theme, the font stack and the mixer groups are in
+      the decision file; the mixer read-back lists the five groups.
+- [ ] Every screen scales between the smallest and the largest supported
+      aspect ratio with no clipping, and the theme variables are the only
+      source of colour and spacing; the layout check output is clean.
+- [ ] Long lists recycle their items, and the profiler shows no per-frame
+      allocation from the interface or the text; the metrics file reports
+      zero GC bytes per frame.
+- [ ] Every string resolves in every target language, the pseudo-localization
+      pass is clean, and the right-to-left screens mirror correctly; the
+      pass output lists no clipped string.
+- [ ] Every action fires from every control scheme, the rebinding survives a
+      restart, and the focus order is complete on every screen. The
+      accessibility checklist has evidence for every row, and the gamepad
+      walk-through completes a flow.
+- [ ] Every source routes through the mixer, the snapshots and the ducking
+      work, the budgets hold, and the worst-case burst does not clip; the
+      recorded output shows no clipped sample.

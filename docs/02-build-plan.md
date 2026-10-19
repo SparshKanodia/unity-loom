@@ -10,6 +10,9 @@
 unity-loom/
 ├─ README.md                     human entry point
 ├─ AGENTS.md                     agent contract: how to load, route, and obey doctrine
+├─ GUIDE.md                      the guided path through the repository
+├─ HARNESSES.md                  the install matrix, one row per harness
+├─ CONTRIBUTING.md               how to change this repository without breaking it
 ├─ manifest.json                 machine registry: skills, workflows, triggers, budgets, adapters, upstream
 ├─ LICENSE                       MIT (our text; upstream referenced, never copied)
 ├─ docs/
@@ -19,14 +22,17 @@ unity-loom/
 │  ├─ 03-decision-records.md     ADRs that resolve every upstream conflict
 │  ├─ 04-failure-modes.md        issue-derived failure catalogue + mitigations
 │  ├─ 05-attribution.md          upstream ledger + license status
-│  └─ 06-context-budget.md       budget table and rationale
+│  ├─ 06-context-budget.md       budget table and rationale
+│  └─ 07-workflow-template.md    the contract every workflow is written to
 ├─ doctrine/                     the law (single source of truth)
 │  ├─ 00-precedence.md           conflict-resolution lattice
 │  ├─ 01-safety.md               destructive-action + secrets + approval rules
 │  ├─ 02-capabilities.md         T0–T3 tiers, detection, fallbacks
 │  ├─ 03-state-freshness.md      mandatory pre-action gate
 │  ├─ 04-responses.md            output/context budgets
-│  └─ 05-non-invasiveness.md     tooling must not break the project
+│  ├─ 05-non-invasiveness.md     tooling must not break the project
+│  ├─ 06-collaboration.md        two agents, one project: ownership and hand-over
+│  └─ 07-quality.md              tests, error handling, logging, determinism
 ├─ skills/
 │  ├─ unity-loom/SKILL.md        router (mandatory entry)
 │  ├─ loom-project/SKILL.md
@@ -52,6 +58,7 @@ unity-loom/
 └─ tools/
    ├─ validate.mjs               the validator (no deps)
    ├─ install.mjs                one install path for every harness (no deps)
+   ├─ perf-budget.mjs            frame and memory budget guard for a capture
    └─ README.md
 ```
 
@@ -66,18 +73,24 @@ Every `SKILL.md` frontmatter:
 ```yaml
 ---
 name: loom-xr
-description: "Design, build and verify Unity XR experiences (AR Foundation, XR Interaction Toolkit, OpenXR, hands, comfort). Use when the task touches VR, AR, MR, Quest, visionOS or XR rigs."
-allowed-tools: Read, Grep, Glob, Write, Edit, Bash
+description: "Use for Unity XR work: OpenXR setup and feature groups, XR Interaction Toolkit rigs and interactors, AR Foundation trackables and anchors, hand tracking, passthrough, comfort settings and haptics. Apply it to any AR, VR or MR target in a Unity project."
+allowed-tools: Read, Grep, Glob, Write, Edit
 metadata:
   loom: 1
   domain: xr
-  tier: 4
-  triggers: ["xr", "virtual reality", "augmented reality", "mixed reality", "arfoundation", "xri", "openxr", "quest", "visionos", "hand tracking", "passthrough", "plane detection", "teleport", "comfort", "haptics", "mruk", "polyspatial", "spatial computing", "webxr"]
-  budget: { lines: 200, bytes: 8192 }
-  verified-against: ["Unity 6000.3 LTS", "com.unity.xr.interaction.toolkit 3.x", "com.unity.xr.arfoundation 6.x"]
-  sources: ["docs.unity3d.com/Packages/com.unity.xr.interaction.toolkit@3.6", "docs.unity3d.com/Packages/com.unity.xr.arfoundation"]
+  tier: 6
+  triggers: ["xr", "virtual reality", "augmented reality", "mixed reality", "arfoundation", "xri", "openxr", "quest", "meta xr", "visionos", "polyspatial", "hand tracking", "passthrough", "spatial anchor", "plane detection", "teleport", "comfort", "haptics", "mruk", "spatial computing", "webxr", "hololens", "pico", "steamvr"]
+  budget: { lines: 340, bytes: 16000 }
+  verified-against: ["Unity 6000.3 LTS", "com.unity.xr.interaction.toolkit 3.x", "com.unity.xr.arfoundation 6.x", "com.unity.xr.openxr 1.x"]
+  sources: ["docs.unity3d.com/Packages/com.unity.xr.interaction.toolkit"]
 ---
 ```
+
+The tier is the position of the skill in the catalogue, counted from the router
+at 0. The budget is the cap the manifest enforces for a domain skill: 340
+lines and 16,000 bytes. A skill that declares a different budget fails the
+validator, so the number appears once in the manifest and once in the
+frontmatter and the two can never drift.
 
 **Rules (all lint-enforced):**
 
@@ -89,7 +102,7 @@ metadata:
 | `name` matches directory; unique across the repo | Routing integrity | C8 name collisions |
 | `triggers` are lowercase, disjoint across domain skills | One skill per task | Router collisions |
 | `verified-against` present and non-empty | Freshness traceability | F8, F12 |
-| No `TODO`/placeholder text in shipped files | Quality | — |
+| No unfinished-work marker in a shipped file | Quality | — |
 
 ---
 
@@ -125,7 +138,7 @@ Domain skills own **narrow** triggers. No trigger string may appear in two domai
 
 | Layer | Owns | Skills may |
 |---|---|---|
-| `doctrine/` | rules that apply everywhere (safety, tiers, freshness, responses, non-invasiveness, precedence) | **link only** |
+| `doctrine/` | rules that apply everywhere (precedence, safety, capabilities, freshness, responses, non-invasiveness, collaboration, quality) | **link only** |
 | `references/claims.md` | technical claims + sources + version | **cite only** (`see claims#C-xx`) |
 | `references/xr-dialect.md` | the one XR API dialect + compatibility table | **link only** |
 | `workflows/` | the ordered process per domain | **link only** |
@@ -138,24 +151,41 @@ Domain skills own **narrow** triggers. No trigger string may appear in two domai
 ## 5. Precedence lattice (conflict resolution)
 
 ```
-L0  doctrine            safety · non-invasiveness · freshness · response budget · precedence
-L1  project policy      ADRs in docs/03-decision-records.md (architecture defaults)
-L2  domain skill        one of loom-2d/3d/graphics/ui-audio/xr/simulation
-L3  cross-cutting       loom-performance (may override L2 with measured evidence)
-                        loom-release (may override L2 with test/CI evidence)
-L4  tooling/adapters    Unity CLI · unity-mcp · UCP · metavr  (never override L0–L3)
+L0  doctrine            precedence · safety · capabilities · state freshness
+                        responses · non-invasiveness · collaboration · quality
+L1  measured evidence   a profiler capture, a device trace, a test run, a build log
+L2  ADR default         the defaults in docs/03-decision-records.md
+L3  domain skill        loom-project · loom-2d · loom-3d · loom-graphics
+                        loom-ui-audio · loom-xr · loom-simulation
+                        loom-performance · loom-release
+L4  upstream convention how the upstream packs solved it; a common Unity idiom
+L5  personal preference the taste of the person who asked
 ```
+
+A lower layer never overrides a higher one. The lattice is owned by
+[doctrine/00-precedence.md](../doctrine/00-precedence.md) §1, and that table is
+the only layer numbering in the repository.
 
 **Resolution order:**
 1. **Safety/security/privacy** → L0 wins, no exceptions.
-2. **An ADR covers the case** → the ADR's default wins; deviation requires the ADR's stated escape-hatch condition.
-3. **Measured evidence exists** (Profiler, test, logs, screenshot) → evidence wins over opinion, citing the artifact.
+2. **Measured evidence exists** (profiler capture, device trace, test run, build
+   log) → evidence wins over any default, and the artefact is named.
+3. **An ADR covers the case** → the ADR's default wins; deviation requires the
+   ADR's stated escape-hatch condition and a written deviation record.
 4. **Specificity** → the more specific domain skill wins over a broader one.
-5. **Tie** → the router asks the user exactly one question; it never silently picks.
+5. **Tie** → the router asks the user exactly one question; it never silently
+   picks.
 
-Every L2 conflict found in `docs/00` §5 is assigned an ADR in `docs/03-decision-records.md`. There are no unresolved conflicts by design.
+Every conflict found in `docs/00` §5 is assigned an ADR in
+`docs/03-decision-records.md`. There are no unresolved conflicts by design.
 
-Decisions taken *during* the build are recorded in the same file, in the same format: ADR-0013 (triplicated, drift-checked trigger vocabulary), ADR-0014 (secret scanning is a blocking rule), ADR-0015 (new capability ships as a reference, not a skill), ADR-0016 (the validator tests itself), ADR-0017 (measured evidence beats every default except L0).
+Decisions taken *during* the build are recorded in the same file, in the same
+format, and the register now runs from ADR-0001 to ADR-0024. The ones that
+shape the contracts this document describes are ADR-0013 (triplicated,
+drift-checked trigger vocabulary), ADR-0014 (secret scanning is a blocking
+rule), ADR-0015 (new capability ships as a reference, not a skill), ADR-0016
+(the validator tests itself), and ADR-0017 (measured evidence beats every
+default except L0).
 
 ---
 
@@ -214,6 +244,10 @@ The invariants that do not move: skill count ≤ 12, workflow count ≤ 10, refe
 | F16 secret leakage | blocking secret scan, redacted findings, explicit allowlist marker | `tools/validate.mjs`, `doctrine/01-safety.md` |
 | F17 routing drift | trigger vocabulary triplicated and compared byte-for-byte | `tools/validate.mjs`, `skills/unity-loom/SKILL.md` |
 | F18 checker rot | validator self-test over synthetic bad inputs, run in CI | `tools/validate.mjs --selftest` |
+| F19 an agent commits a secret | environment-only secrets, a staged-diff scan, a blocking tree and history scan | `doctrine/01-safety.md`, `doctrine/06-collaboration.md`, `.github/workflows/ci.yml` |
+| F20 two agents, one file | one owner per file, one worktree per agent, a dirty tree reported before use | `doctrine/06-collaboration.md` |
+| F21 a change shipped with no test | a test that fails without the change, a named artefact, a `Done when` gate | `doctrine/07-quality.md`, `tools/validate.mjs` |
+| F22 a desktop measurement shipped to a device | every speed or memory claim names the capture and the device it came from | `doctrine/07-quality.md`, `workflows/performance.md`, `tools/perf-budget.mjs` |
 
 ---
 
@@ -228,20 +262,33 @@ Runs with **Node ≥ 20, zero dependencies**. Exits non-zero on any failure. Che
 5. **Budgets** — per-file lines/bytes and total core bytes, **CRLF-normalized** before measuring.
 6. **Links** — every relative markdown link resolves; every `references/...` path exists; every `workflows/x.md` referenced exists.
 7. **No-restatement** — normalized canonical lines (outside code fences) unique unless `<!-- summary:ok -->`.
-8. **Safety scan** — no secrets (redacted findings; an inline `<!-- loom-allow-secret: reason -->` marker permits a documented placeholder); no `TODO`; no GUI-click instructions (regex on "click the…" inside skills); no vendor dumps (large single-line blocks).
+8. **Safety scan** — no secrets (redacted findings; an inline `<!-- loom-allow-secret: reason -->` marker permits a documented placeholder); no unfinished-work marker; no GUI-click instructions.
 9. **Workflow gates** — every workflow ends with a `## Done when` section; every workflow is owned by a skill; every skill's workflow exists.
 10. **Determinism** — validator output is sorted; line endings handled; runs identically on Windows/macOS/Linux.
 11. **Self-test** — `--selftest` runs every rule over synthetic bad input and a good input, proving each rule fires and none fires spuriously. The checker is itself a tested artefact (ADR-0016).
 
 ## 10. CI matrix
 
-| Job | Runner | Steps |
-|---|---|---|
-| `validate` | ubuntu, macos, windows × Node 20/22 | `node tools/validate.mjs` |
-| `links` | ubuntu | validator link pass (network optional; offline by default) |
-| `editor-tests` *(optional, P1)* | ubuntu + GameCI | open fixture project, run EditMode/PlayMode, build manifest check |
+The pipeline is [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). It
+has six jobs, and each one proves a single thing.
 
-CI is **offline-first**: no network needed to validate, so budgets and links can't rot silently into a network flake (fixes F11/F12 underpinning).
+| Job | Runner | What it proves |
+|---|---|---|
+| `validate` | ubuntu, macos, windows × Node 20/22/24 | The repository contracts hold on every supported platform and runtime: the validator self-test, the full rule set, a JSON report uploaded as an artefact, and a job summary. |
+| `install` | ubuntu, windows | The install path works end to end on a clean destination: `plan`, `install`, `verify`, `doctor`, and a final check that every relative link in the installed tree resolves on disk. |
+| `links` | ubuntu | Every relative markdown link in the repository resolves, offline and without a dependency. |
+| `secrets` | ubuntu | No credential material in the working tree and none in the git history. |
+| `editor-tests` *(optional, manual only)* | ubuntu + GameCI | The Unity EditMode and PlayMode tests pass. The job needs a Unity licence secret, runs only on `workflow_dispatch`, and therefore never blocks a pull request and never fails on a fork. |
+| `release` | ubuntu, on a `v*` tag | The tag matches the version in `manifest.json`, the skills, the shared corpus and the tools are packaged into one archive, and the archive is published as a release asset. |
+
+Common settings: `contents: read` at the workflow level, elevated to
+`contents: write` in the `release` job only; one concurrency group per
+reference; `fail-fast: false` on every matrix, so one broken combination never
+hides the state of the others; and pinned action versions.
+
+CI is **offline-first**: no network is needed to validate the content, so
+budgets and links cannot rot silently into a network flake (fixes F11/F12
+underpinning). A documentation-only change does not spend a runner at all.
 
 ## 11. Upstream sync strategy
 
@@ -252,13 +299,21 @@ CI is **offline-first**: no network needed to validate, so budgets and links can
 
 ## 12. Acceptance criteria (definition of done)
 
-- [ ] `node tools/validate.mjs` exits 0 on Windows, macOS and Linux.
-- [ ] 1 router + 9 domain skills; 9 workflows; 6 doctrine files; references as registered; all in `manifest.json`.
-- [ ] 0 trigger collisions; 0 trigger drift between manifest, frontmatter and router table; 0 duplicated canonical lines; 0 broken links.
-- [ ] Every file within its budget in `docs/06-context-budget.md`, or the budget raised with a stated reason.
-- [ ] Every non-obvious claim has a source and a `verified-against` version.
-- [ ] Every conflict in `docs/00` §5 has an ADR in `docs/03`.
-- [ ] Every failure cluster F1–F18 maps to a design element (§8).
-- [ ] Core skills are useful with **zero** external tools.
-- [ ] README teaches a 60-second install and a 5-minute first task.
-- [ ] No secret-shaped material in any tracked file; the validator reports findings redacted.
+- [x] `node tools/validate.mjs` exits 0 on Windows, macOS and Linux.
+- [x] 1 router + 9 domain skills; 9 workflows; 8 doctrine files; references as
+      registered; all in `manifest.json`.
+- [x] 0 trigger collisions; 0 trigger drift between manifest, frontmatter and
+      router table; 0 duplicated canonical lines; 0 broken links.
+- [x] Every file within its budget in `docs/06-context-budget.md`, or the
+      budget raised with a stated reason.
+- [x] Every non-obvious claim has a source and a `verified-against` version.
+- [x] Every conflict in `docs/00` §5 has an ADR in `docs/03`.
+- [x] Every failure cluster F1–F22 maps to a design element (§8).
+- [x] Core skills are useful with **zero** external tools.
+- [x] README teaches a 60-second install and a 5-minute first task.
+- [x] No secret-shaped material in any tracked file; the validator reports
+      findings redacted.
+- [x] The install path is executed by CI, not only described in prose.
+- [ ] A Unity project with EditMode and PlayMode tests exists, so the
+      `editor-tests` job has something to run. The job is written and guarded;
+      the fixture is not in the tree yet.

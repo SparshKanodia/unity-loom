@@ -19,7 +19,7 @@ recompile loop, unbounded history made an operation 13× slower, and a shipped
 | Presence or idle detectors | background work the user never triggered |
 | File watchers that trigger recompiles | every write re-imports the project |
 | Background daemons | outlive the task and own the machine |
-| Telemetry, analytics, crash reporting, phone-home | sends data with no opt-in |
+| Telemetry, analytics, crash reporting, phone-home from the agent's own tooling | sends data with no opt-in |
 | Global Unity/Hub preference edits | changes the user's machine, not the project |
 | Writing outside the project | leaves traces the user cannot see or undo |
 | Stray files under `Assets/` | pollutes the project and its GUID space |
@@ -28,6 +28,10 @@ recompile loop, unbounded history made an operation 13× slower, and a shipped
 
 If a check seems valuable, expose it as an explicit command the user or the
 agent invokes. Never ship a default that runs by itself.
+
+The agent's own tooling never phones home. A user project's product telemetry is a
+different subject: it is allowed only with a consent gate, an opt-out and a
+disclosure, and the rule is owned by [doctrine/01-safety.md](01-safety.md) §9.1.
 
 ## 3. Nothing ships into the user's project by default
 

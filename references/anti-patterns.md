@@ -6,9 +6,13 @@ Unified table merging the recurring mistakes found across the source repositorie
 
 1. Scan **TOP 10 BY SEVERITY** first; if the symptom matches, jump to that `AP-nnn`.
 2. Otherwise find the symptom in a domain section, then read the **Fix** cell for the construct to change.
-3. The **Claim** cell: `C-nnn` points into [claims.md](claims.md); `loom-*` names the owning skill; anything else names a doctrine, ADR, or workflow.
+3. The **Claim** cell names the rule that governs the row: a `C-nnn` id points
+   into [claims.md](claims.md), a `loom-*` name is the owning skill, and anything
+   else is a doctrine, an ADR id, or a workflow.
 4. Apply the fix, then prove it against the owning workflow's `Done when` gate — a fix is not done until that gate passes.
-5. A row with no `C-nnn` needs one: verify against the primary source first, then add it to the registry (ADR-0012).
+5. A row whose rule is a technical fact needs a `C-nnn` id: verify against the
+   primary source first, then add it to the registry (ADR-0012). A row whose rule
+   is a process rule names its doctrine, ADR or skill instead.
 
 ## TOP 10 BY SEVERITY
 
@@ -32,9 +36,9 @@ owner: skills/loom-performance/SKILL.md, workflows/performance.md
 | AP-001 | `Update` polling every frame | Polls state | Tax every frame | Tick on event | doctrine 04 |
 | AP-002 | `Camera.main` in a hot loop | Tagged search | CPU cost | Cache in `Awake` | C-002 |
 | AP-003 | `GetComponent` per frame | Lookup in `Update` | CPU and alloc | Cache in `Awake` | C-006 |
-| AP-004 | `Find*` scene searches | `FindObjectsOfType` | Deprecated, stalls | Serialized reference | C-002 |
+| AP-004 | `Find*` scene searches | `FindObjectsOfType` in a frame loop | A full scene scan, every frame | Cache the reference in `Awake` | C-070 |
 | AP-005 | Use after `Destroy` | Same-frame access | "Fake null" NRE | Null-check `== null` | C-003 |
-| AP-006 | `Instantiate`/`Destroy` loop | Spawn per event | GC spikes, stutter | Pool and reuse | C-001 |
+| AP-006 | `Instantiate`/`Destroy` loop | Spawn per event | GC spikes, stutter | Pool and reuse | loom-performance |
 | AP-007 | `Resources.Load` at runtime | Load in `Start` | No unload, bloat | Addressables handle | C-007 |
 | AP-008 | `UnloadUnusedAssets` hot path | Called mid-game | Long stall | Release Addressables | C-044 |
 | AP-009 | Static mutable singleton | `static` state | Hidden deps | Interfaces + DI | ADR-0002 |
@@ -87,16 +91,16 @@ owner: skills/loom-graphics/SKILL.md, workflows/graphics.md
 | ID | Anti-pattern | Shows up | Why it fails | Fix | Claim |
 |---|---|---|---|---|---|
 | AP-037 | Per-object material | `new Material` / `SetColor` | Breaks SRP Batcher | `MaterialPropertyBlock` | C-010 |
-| AP-038 | `Shader.PropertyToID` hot path | Lookup per call | String hashing | Cache the id | C-014 |
+| AP-038 | `Shader.PropertyToID` hot path | Lookup per call | String hashing | Cache the id | C-216 |
 | AP-039 | Per-object shader variants | Variant per material | Batcher breaks | Few shared variants | C-010 |
 | AP-040 | GPU instancing, wrong shader | Instancing unchecked | Nothing instanced | Instancing-enabled shader | C-011 |
 | AP-041 | Transparent stacking | Layered alpha quads | Fill-rate collapse | Fewer layers, cut alpha | C-012 |
 | AP-042 | Real-time shadows on mobile | Every light casts | GPU cost per light | Baked shadows | C-012 |
 | AP-043 | Texture import uncompressed | Default settings | Memory, load spike | ASTC mobile, BC desktop | C-043 |
-| AP-044 | Unbaked lightmaps at runtime | Realtime-only lighting | CPU cost | Bake static + probes | C-013 |
-| AP-045 | No LOD groups | Full-detail meshes | Vertices, draw calls | LOD Group per set | C-012 |
-| AP-046 | `Camera.clearFlags` per frame | Written in `Update` | Pointless churn | Set once in setup | C-001 |
-| AP-047 | Pipeline asset at defaults | URP asset untouched | Wrong shadows, tiers | Set tiers, shadows, MSAA | C-013 |
+| AP-044 | Unbaked lightmaps at runtime | Realtime-only lighting | CPU cost | Bake static + probes | C-107 |
+| AP-045 | No LOD groups | Full-detail meshes | Vertices, draw calls | LOD Group per set | C-091 |
+| AP-046 | `Camera.clearFlags` per frame | Written in `Update` | Pointless churn | Set once in setup | loom-performance |
+| AP-047 | Pipeline asset at defaults | URP asset untouched | Wrong shadows, tiers | Set tiers, shadows, MSAA | C-078 |
 | AP-048 | `Shader.Find` at runtime | Lookup per call | Slow, fails in builds | Serialized references | C-014 |
 
 ## UI & audio
@@ -110,7 +114,7 @@ owner: skills/loom-ui-audio/SKILL.md, workflows/ui-audio.md
 | AP-051 | UI Toolkit for world UI | UIDocument in build | Wrong runtime layout | uGUI for world-space | loom-ui-audio |
 | AP-052 | AudioSource per SFX | New source per sound | Alloc, mixing churn | Pool sources + mixer | loom-ui-audio |
 | AP-053 | Long music in memory | Whole clip in RAM | Memory spike | `LoadType.Streaming` | loom-ui-audio |
-| AP-054 | No mixer snapshot design | Levels per clip | No ducking, no bus | Master/Music/SFX | loom-ui-audio |
+| AP-054 | No mixer snapshot design | Levels per clip | No ducking, no bus | Master/Music/SFX/Voice/UI | loom-ui-audio |
 | AP-055 | `PlayClipAtPoint` in gameplay | One-shot helper | No control, no pooling | Pooled `AudioSource` | loom-ui-audio |
 | AP-056 | No spatial blend | 2D clip in 3D scene | Flat, wrong feel | 3D blend + spatial | loom-ui-audio |
 | AP-057 | Legacy `Input.GetAxis` | New-Input project | No rebinding | Input System actions | loom-ui-audio |
@@ -123,8 +127,8 @@ owner: skills/loom-xr/SKILL.md, workflows/xr.md, references/xr-dialect.md
 | ID | Anti-pattern | Shows up | Why it fails | Fix | Claim |
 |---|---|---|---|---|---|
 | AP-059 | Deprecated `OnSelectEntered` | Old XRI event names | Never fires | `selectEntered`/`Exited` | C-021 |
-| AP-060 | Smooth locomotion as default | Continuous move | Nausea | Teleport + snap turn | C-027 |
-| AP-061 | No comfort options | No settings menu | Motion sickness | Turn, vignette, recenter | C-027 |
+| AP-060 | Smooth locomotion as default | Continuous move | Nausea | The ADR-0006 locomotion default | C-027 |
+| AP-061 | No comfort options | No settings menu | Motion sickness | A comfort menu, per ADR-0006 | C-027 |
 | AP-062 | Multi-pass stereo | Mult-pass enabled | Double submission | Single-pass instanced | C-020 |
 | AP-063 | Per-frame GC in XR hot paths | Allocs per frame | Stutter in stereo | Cache, pool, non-alloc | doctrine 04 |
 | AP-064 | Un-anchored AR/MR content | No anchor | Drifts away | Anchor + world-lock | C-026 |
@@ -140,22 +144,22 @@ owner: skills/loom-project/SKILL.md, workflows/foundation.md, skills/loom-releas
 
 | ID | Anti-pattern | Shows up | Why it fails | Fix | Claim |
 |---|---|---|---|---|---|
-| AP-070 | One giant asmdef | All scripts in one | Slow compiles | Runtime/Editor/Tests asmdefs | C-050 |
-| AP-071 | Missing `.meta` files | Moved without meta | Missing-script warnings | Commit `.meta` | ADR-0010 |
+| AP-070 | One giant asmdef | All scripts in one | Slow compiles | Runtime/Editor/Tests asmdefs | loom-project |
+| AP-071 | Missing `.meta` files | Moved without meta | Missing-script warnings | Commit `.meta` with the asset | ADR-0004 |
 | AP-072 | Generated folders committed | `Library/` in git | Merge noise | Ignore them | doctrine 05 |
 | AP-073 | Unpinned package versions | Floating versions | Broken repro | Pin versions + lock | ADR-0004 |
 | AP-074 | Secrets in the repo | Token in source | Credential leak | Env vars, not files | doctrine 01 |
 | AP-075 | `Debug.Log` per frame | In release build | CPU, log spam | Strip in release | doctrine 04 |
-| AP-076 | Reflection-only code | `GetType`, `SendMessage` | Stripped in build | Preserve attribute | ADR-0009 |
+| AP-076 | Reflection-only code | `GetType`, `SendMessage` | Stripped in build | Preserve attribute | C-147 |
 | AP-077 | No CI test run | Manual build | Regressions ship | GameCI: test + build | C-053 |
 | AP-078 | No release build profile | One settings set | Wrong defines, tier | Build Profiles per target | C-051 |
-| AP-079 | Store compliance skipped | No privacy sheet | Submission rejected | Store checklist | C-051 |
+| AP-079 | Store compliance skipped | One profile, no privacy sheet | Submission rejected | Store checklist, one store profile, privacy sheet | C-051 |
 | AP-080 | Auto-running editor hooks | `[InitializeOnLoad]` | Recompile loops | Opt-in commands | ADR-0010 |
 | AP-081 | Unchecked null dereference | Used after destroy | Silent NRE | Check `== null` first | C-003 |
 
 ## Agent-specific
 
-owner: skills/unity-loom/SKILL.md, doctrine/03-state-freshness.md
+owner: skills/unity-loom/SKILL.md, doctrine/03-state-freshness.md, doctrine/06-collaboration.md, doctrine/07-quality.md
 
 | ID | Anti-pattern | Shows up | Why it fails | Fix | Claim |
 |---|---|---|---|---|---|
@@ -168,3 +172,7 @@ owner: skills/unity-loom/SKILL.md, doctrine/03-state-freshness.md
 | AP-088 | Scoring from screenshots | Score off a render | Non-deterministic | Log discrete events | C-061 |
 | AP-089 | Short device run | Two-minute soak | Misses throttling | 20+ minute soak | loom-performance |
 | AP-090 | Restating guidance per skill | Same rule rewritten | Contradiction | Link the claim | ADR-0012 |
+| AP-091 | An agent commits a secret | A token in a generated report | The credential is in the history | Env vars, scan the staged diff, rotate the key | doctrine 01 |
+| AP-092 | Two agents edit one file | Both branches touch it | One change is lost in the merge | One owner per file, then hand the change over | doctrine 06 |
+| AP-093 | A change ships untested | No test, no gate | The regression reaches the user | A test that fails without the change | doctrine 07 |
+| AP-094 | Measured on the desktop, shipped to a device | Editor numbers used as device truth | The target device behaves differently | A device measurement, quoted with its tier | doctrine 02 |

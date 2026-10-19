@@ -1,0 +1,89 @@
+name: Bug report
+description: Something in a skill, a workflow or the tooling behaved wrongly.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is for a defect in Unity Loom itself. A problem inside your
+        own Unity project is not a Unity Loom bug, unless the skill led you
+        the wrong way.
+
+  - type: input
+    id: summary
+    attributes:
+      label: What broke
+      description: One sentence. What did you observe, and what did you expect instead?
+      placeholder: The XR skill routed a hand-tracking request to the 3D skill.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Which skill
+      description: The skill that produced the wrong behaviour.
+      options:
+        - unity-loom (the router)
+        - loom-project
+        - loom-2d
+        - loom-3d
+        - loom-graphics
+        - loom-ui-audio
+        - loom-xr
+        - loom-simulation
+        - loom-performance
+        - loom-release
+        - None, the router never loaded
+        - The tools, not a skill
+    validations:
+      required: true
+
+  - type: input
+    id: unity-version
+    attributes:
+      label: Which Unity version
+      description: The editor version, and the package versions if the problem is package-specific.
+      placeholder: Unity 6000.3 LTS, com.unity.xr.interaction.toolkit 3.6
+    validations:
+      required: true
+
+  - type: textarea
+    id: agent-did
+    attributes:
+      label: What the agent did
+      description: The steps the agent took, in order. Commands and file paths are useful.
+      placeholder: |
+        1. Read the router table.
+        2. Loaded loom-xr/SKILL.md.
+        3. Ran the AR setup checklist.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: The evidence
+      description: The log line, error message, test output or link that shows the failure.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What the skill or workflow should have done instead.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The validator passes on my checkout
+        - label: I read the relevant workflow and followed its Done when gate
+    validations:
+      required: false

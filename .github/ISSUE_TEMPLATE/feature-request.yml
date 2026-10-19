@@ -1,0 +1,97 @@
+name: Feature request
+description: Propose a new skill, a workflow, a claim or a rule change.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A new skill needs four things: a real workflow, a verification gate,
+        disjoint triggers, and an existing skill it replaces or merges with.
+        Without all four, the content belongs in `references/`.
+
+        Say so in the proposal, so the reviewer can answer in one pass.
+
+  - type: textarea
+    id: request
+    attributes:
+      label: The request
+      description: What you want the repository to be able to do, and why the current state cannot do it.
+      placeholder: An agent should be able to tell, from a profiler capture alone, which change would fix the frame time.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: The domain
+      description: The domain the request belongs to.
+      options:
+        - project
+        - 2d
+        - 3d
+        - graphics
+        - ui-audio
+        - xr
+        - simulation
+        - performance
+        - release
+        - The router
+        - The tooling
+        - Doctrine, it applies everywhere
+    validations:
+      required: true
+
+  - type: dropdown
+    id: shape
+    attributes:
+      label: The shape of the change
+      description: What kind of artefact this is.
+      options:
+        - A new skill
+        - A new workflow
+        - A new reference
+        - A new claim
+        - A change to doctrine
+        - A change to the tooling
+        - A change to an existing skill
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: The workflow it belongs in
+      description: Which workflow runs the procedure, and what its gate would be. Leave empty for a change that belongs to no workflow.
+      placeholder: workflows/performance.md, with a gate of a p95 frame time under 16.6 ms on the device capture.
+    validations:
+      required: false
+
+  - type: textarea
+    id: replaced
+    attributes:
+      label: What it would replace or merge
+      description: The existing skill, workflow or reference that this replaces, merges into, or leaves untouched. This is the growth protocol question.
+      placeholder: It merges into loom-performance, so the trigger set stays disjoint and the skill count does not grow.
+    validations:
+      required: true
+
+  - type: textarea
+    id: triggers
+    attributes:
+      label: The triggers
+      description: The phrases that would route to this. They must not collide with an existing skill.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The content has a verification gate
+        - label: The content has a real workflow, not just prose
+        - label: The trigger set is disjoint from every existing skill
+    validations:
+      required: false

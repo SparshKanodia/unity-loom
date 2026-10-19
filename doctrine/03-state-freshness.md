@@ -90,20 +90,14 @@ Another agent or a human may be editing the same project.
 - Treat any state read more than one action ago as stale.
 - If the state changed underneath you, abort, re-read, and re-decide.
 - Never write a file another agent changed since your last read; re-read it first.
-- Prefer a separate branch or worktree per agent; state which one you used.
+- Prefer a separate branch or worktree per agent; state which one you used. The
+  strategy and the hand-over rules live in [doctrine/06-collaboration.md](06-collaboration.md).
 - Report the project path in every reply, so a second agent knows whose tree it is.
 
 ## 7. Escalation
 
-When the gate cannot be cleared, do not guess. Emit a `HUMAN HANDOFF` block:
-
-```text
-HUMAN HANDOFF
-What:   <one line: the step that is blocked>
-Why:    <why an agent cannot clear the gate>
-Steps:  1) <exact command or editor action> 2) <exact command> 3) <...>
-Verify: <what the human should report back>
-```
+When the gate cannot be cleared, do not guess. Emit a `HUMAN HANDOFF` block in the
+shape owned by [doctrine/01-safety.md](01-safety.md) §11.
 
 Block on: a compile error with no fix in scope, a modal dialog, a locked project, an unsaved scene the user must decide about, or an adapter that never answers.
 

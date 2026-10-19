@@ -1,65 +1,98 @@
 ---
 name: loom-3d
-description: "Unity 3D work: character movement, physics and colliders, NavMesh navigation, terrain blockout, Cinemachine cameras, LOD and occlusion culling, rigging and Timeline."
+description: "Use for Unity 3D work: character movement, physics bodies and colliders, NavMesh navigation, terrain blockout, Cinemachine cameras, LOD groups and occlusion culling, rigging, Timeline sequences and level design. Apply it to any 3D scene, character or level work."
 allowed-tools: Read, Grep, Glob, Write, Edit
 metadata:
   loom: 1
   domain: 3d
   tier: 3
   triggers: ["3d", "navmesh", "character controller", "rigidbody", "collider", "terrain", "probuilder", "cinemachine", "lod", "occlusion culling", "animation rigging", "timeline", "level design"]
-  budget: { lines: 320, bytes: 14000 }
+  budget: { lines: 340, bytes: 16000 }
   verified-against: ["Unity 6000.3 LTS", "com.unity.cinemachine 3.x", "com.unity.ai.navigation 2.x", "com.unity.animation.rigging 1.x"]
   sources: ["docs.unity3d.com/6000.3/Documentation/Manual/PhysicsOverview", "docs.unity3d.com/Packages/com.unity.ai.navigation"]
 ---
 
 # loom-3d — 3D Development
 
-Work [workflows/3d.md](../../workflows/3d.md) in order. API facts: [references/claims.md](../../references/claims.md).
+Work [workflows/3d.md](../../workflows/3d.md) in order. API facts:
+[references/claims.md](../../references/claims.md).
 
-## Decide first
+## When to use
+
+- A character moves and the body type is undecided.
+- A scene needs colliders, a layer matrix or a physics material.
+- An agent navigates and the bake is missing or stale.
+- A camera follows, blends or cuts between shots.
+- A level is blocked out, and the LOD and the occlusion plan are open.
+- A scripted sequence is authored and Timeline is the candidate.
+
+## When not to use
+
+- A 2D project, or a 2D sprite used in a 3D scene ->
+  [../loom-2d/SKILL.md](../loom-2d/SKILL.md).
+- A question about Unity itself rather than a change -> stay in the router,
+  [../unity-loom/SKILL.md](../unity-loom/SKILL.md).
+- Materials, shaders, the look or the quality tiers ->
+  [../loom-graphics/SKILL.md](../loom-graphics/SKILL.md).
+- Frame time, draw calls or memory ->
+  [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
+- The same scene inside a headset -> [../loom-xr/SKILL.md](../loom-xr/SKILL.md).
+
+## Pick the approach
 
 | Question | Default |
 |---|---|
 | Player movement | Kinematic `CharacterController` for authored feel, `Rigidbody` when physics-driven (C-115) |
 | Physics body | `MovePosition` with interpolation, never `transform` writes |
 | Navigation | `NavMeshSurface` baked offline (C-092), `NavMeshAgent` only for pathing AI |
-| Cameras | Cinemachine: one brain, one virtual camera per shot |
-| Blockout | ProBuilder greybox, bake nav and lighting, then art pass |
-| Visibility | LOD group per prop cluster (C-091), baked occlusion in closed interiors (C-116) |
+| Cameras | one `CinemachineBrain`, one `CinemachineCamera` per shot (C-197) |
+| Blockout | a greybox pass, then bake nav and lighting, then the art pass |
+| Visibility | an LOD group per prop cluster (C-091), baked occlusion in closed interiors (C-116) |
 
-## Decision tree
+Narrow it further:
 
-- **Kinematic or dynamic player?** → authored movement is kinematic; ragdolls and physics puzzles are dynamic. One body, one approach.
-- **Static or dynamic batching?** → SRP Batcher for opaque geometry sharing a material (C-010), GPU instancing for repeats (C-011).
-- **Baked or realtime lighting?** → bake static lightmaps; realtime only for moving lights, off on mobile.
-- **Timeline or custom animation?** → Timeline for scripted sequences, code for gameplay state machines.
-- **ProBuilder or imported mesh?** → ProBuilder for blockout, collision and lightmap UVs (C-107); imported art gets a simple collider.
-- **LOD and occlusion strategy?** → LOD group per prop cluster, baked occlusion per closed interior, both checked in the frame debugger.
-- **Camera feels unsmooth?** → tune Cinemachine damping and the brain update, not hand-written camera code.
+- Kinematic or dynamic player? Authored movement is kinematic; ragdolls and
+  physics puzzles are dynamic. One body, one approach.
+- Static or dynamic batching? The SRP Batcher for opaque geometry that
+  shares a material (C-010), GPU instancing for repeats (C-011).
+- Baked or realtime lighting? Bake static lightmaps; realtime only for
+  lights that must move, off on mobile.
+- Timeline or custom animation? Timeline for scripted sequences, code for
+  gameplay state machines.
+- Blockout tool or imported mesh? A blockout tool for the blockout. An
+  imported mesh needs proper lightmap UVs to be lit by a baked lightmap
+  (C-107); imported art gets a simple collider.
+- LOD and occlusion strategy? An LOD group per prop cluster, baked occlusion
+  per closed interior, both checked in a capture.
+- Camera feels unsmooth? Tune the Cinemachine damping and the brain update
+  method, not hand-written camera code.
 
 ## Setup defaults
 
-| Setting | Default |
-|---|---|
-| `Rigidbody.interpolation` | `Interpolate` on every script-driven body; it is off by default (C-075) |
-| Collision detection | `Discrete`; `ContinuousDynamic` for fast movers, `ContinuousSpeculative` for kinematic |
-| Layer collision matrix | Enable only the pairs the game uses |
-| Solver iterations | Engine default 6 (C-173); raise only against measured jitter, and only for new bodies (C-173) |
-| Contact offset | Leave `Physics.defaultContactOffset` alone; tune thin colliders individually |
-| `NavMeshSurface` agent | Project values: radius 0.5 m, height 2.0 m, max slope 45° |
-| `NavMeshSurface` bake | Tile size and voxel size overrides stay at the agent type default (C-117) |
-| Cinemachine blend | `EaseInOut` for gameplay cameras, `Cut` for hard cuts |
-| Cinemachine damping | 0.2–0.5 s on a follow rig, never zero |
-| `CinemachineBrain` update | `Smart Update` (default); `Late Update` for rigid-body targets |
-| `LODGroup` | Screen-relative transition height 0.2–0.3, three levels plus a culled level (C-091) |
-| Occlusion | Baked for closed interiors, re-baked after every level edit (C-116) |
-| Terrain collision | The terrain's own collider; mesh colliders only for carved holes |
-| `Animator` culling | `CullUpdateTransforms` for offscreen characters (C-040) |
-| Timeline | `Director` on `GameTime`, `Animation` and `Audio` tracks on scene objects |
+| Setting | Default | Evidence |
+|---|---|---|
+| `Rigidbody.interpolation` | `Interpolate` on every script-driven body; it is off by default | C-075 |
+| Collision detection | `Discrete`, `Continuous`, `ContinuousDynamic` or `ContinuousSpeculative` | C-203 |
+| Layer collision matrix | only the pairs the game uses | Project default - tune against the solver time |
+| Solver iterations | the project-wide default; raise only against measured jitter | C-173, C-204 |
+| Contact offset | the project-wide default; tune thin colliders individually | C-204 |
+| Navigation bake | `NavMeshSurface` bakes the mesh at bake time, `NavMeshAgent` reads it at runtime | C-202 |
+| `NavMeshSurface` agent | radius, height and slope from the navigation decision file | Project default - tune against the agent radius |
+| `NavMeshSurface` bake | tile size and voxel size stay at the agent type default | C-117 |
+| Cinemachine cameras | one `CinemachineBrain` and one `CinemachineCamera` per shot | C-197 |
+| Cinemachine blend | a `CinemachineBlendDefinition` of `EaseInOut` for gameplay cameras, `Cut` for a hard cut | C-199 |
+| Cinemachine damping | a non-zero smoothing time on a follow rig | Project default - tune against the camera lag |
+| `CinemachineBrain` update | an `UpdateMethod` of `SmartUpdate`, `LateUpdate`, `FixedUpdate` or `ManualUpdate` | C-198 |
+| `LODGroup` | three detail levels plus an empty culled level | C-091, Project default - tune against the LOD heights |
+| Occlusion | baked for closed interiors, re-baked after every level edit | C-116 |
+| Terrain collision | the terrain's own collider; mesh colliders only for carved holes | Project default - tune against the terrain shape |
+| `Animator` culling | `CullUpdateTransforms` for offscreen characters | C-040 |
+| Timeline | a `PlayableDirector` with a `DirectorUpdateMode` of `GameTime`, `UnscaledGameTime`, `DSPClock` or `Manual` | C-200 |
 
-Bake via the editor API (`NavMeshSurface.BuildNavMesh()`), never a GUI step (ADR-0007, C-092).
+Bake through the editor API (`NavMeshSurface.BuildNavMesh()`), never a GUI
+step (ADR-0007, C-092).
 
-## Idiomatic C#
+## Examples
 
 ```csharp
 // Kinematic player; input is injected by the input layer.
@@ -146,11 +179,25 @@ void SetState(float speed, bool grounded)
 }
 ```
 
-`LODGroup`: one group per prop cluster, an explicit low-poly final level, empty culled level (C-091).
+```csharp
+// Find the objects of a type once, with the sort mode the query needs.
+var found = Object.FindObjectsByType<Pickup>(FindObjectsSortMode.None);   // C-071, C-170
+```
+
+```csharp
+// One call sets position and rotation, so the transform is written once.
+transform.SetPositionAndRotation(nextPosition, nextRotation);   // C-180
+```
+
+`Mesh.SetVertices` copies the data into the mesh, so the source list is
+reusable afterwards (C-181). A Timeline sequence runs on a `PlayableGraph`
+(C-118). An `LODGroup` is one group per prop cluster, with an explicit
+low-poly final level and an empty culled level (C-091).
 
 ## Red lines
 
 - No per-frame `GetComponent`, `Find`, `Camera.main` or allocating physics query (C-002, C-006, C-070, C-182).
+- No `FindObjectsOfType`; use `FindObjectsByType` with a `FindObjectsSortMode` (C-071, C-170).
 - No non-convex `MeshCollider` on a moving `Rigidbody` (C-041).
 - No `Physics.SyncTransforms` inside a loop; one sync per frame is the project limit.
 - No `transform.position` writes on a physics body; move it with interpolation (C-075).
@@ -159,19 +206,34 @@ void SetState(float speed, bool grounded)
 - No allocation in `Update`: no LINQ, no closures, no string concatenation.
 - No string-keyed `Animator` parameters at runtime.
 - No `Animator` left without a culling mode for offscreen characters (C-040).
+- No 2.x Cinemachine names; the camera type is `CinemachineCamera` (C-197).
 
 ## Verify
 
 - The player crosses the level at the target frame rate without tunnelling or sticking.
 - A profiler capture shows zero bytes allocated per frame during movement and AI repathing.
 - The baked NavMesh covers the playable area and every agent path completes.
-- LOD swaps and occlusion show up in the frame debugger and render statistics.
+- The LOD swaps and the occlusion show up in the capture below.
 - A release-like device build holds the target frame rate on the floor device.
-- `Done when` from [workflows/3d.md](../../workflows/3d.md) is satisfied.
+- The `Done when` gate of [workflows/3d.md](../../workflows/3d.md) passes.
+
+```text
+HUMAN HANDOFF
+What:   Capture the LOD swaps and the occlusion results of the test scene
+Why:    The frame debugger is a window-only tool, so the agent cannot read
+        the culled object list itself at any tier
+Steps:  1) Open the test scene in the editor
+        2) Open the frame debugger and step through the camera path
+        3) Record which LOD level each prop shows and which objects the
+           occlusion pass culled
+        4) Report the swap points and the culled object names
+Verify: every prop swaps at its recorded height and the interior objects
+        behind a closed wall are culled
+```
 
 ## Handoff
 
-- Frame timing, draw calls, GC → [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
-- Materials, lighting, shaders → [../loom-graphics/SKILL.md](../loom-graphics/SKILL.md).
-- Menus and HUD → [../loom-ui-audio/SKILL.md](../loom-ui-audio/SKILL.md).
-- VR or AR variants of the scene → [../loom-xr/SKILL.md](../loom-xr/SKILL.md).
+- Frame timing, draw calls, GC -> [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
+- Materials, lighting, shaders -> [../loom-graphics/SKILL.md](../loom-graphics/SKILL.md).
+- Menus and HUD -> [../loom-ui-audio/SKILL.md](../loom-ui-audio/SKILL.md).
+- VR or AR variants of the scene -> [../loom-xr/SKILL.md](../loom-xr/SKILL.md).

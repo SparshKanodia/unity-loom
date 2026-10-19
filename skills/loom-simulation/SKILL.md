@@ -1,44 +1,74 @@
 ---
 name: loom-simulation
-description: "Unity simulation and training: objectives, procedure state machines, deterministic assessment, xAPI and SCORM reporting, digital twins and CAD pipelines. Use for training and safety."
+description: "Use for Unity simulation and training work: learning objectives, procedure state machines, deterministic assessment, xAPI and SCORM reporting, digital twins and CAD import pipelines. Apply it to any training, safety or instructional product built in Unity."
 allowed-tools: Read, Grep, Glob, Write, Edit
 metadata:
   loom: 1
   domain: simulation
   tier: 7
   triggers: ["simulation", "training", "procedure", "assessment", "xapi", "scorm", "digital twin", "instructional design", "lms", "instructor", "cad import", "asset transformer"]
-  budget: { lines: 320, bytes: 14000 }
+  budget: { lines: 340, bytes: 16000 }
   verified-against: ["Unity 6000.3 LTS", "xAPI 1.0.3", "SCORM 2004 4th Edition"]
   sources: ["docs.unity3d.com/6000.3/Documentation/Manual/", "adlnet.gov/projects/xapi"]
 ---
 
 # loom-simulation — Simulation & Training
 
-Work [workflows/simulation.md](../../workflows/simulation.md). This domain is about *learning outcomes*, not visuals.
+Work [workflows/simulation.md](../../workflows/simulation.md). This domain is
+about *learning outcomes*, not visuals.
 
-## Decision tree
+## When to use
 
-- **What are you building?** → a module teaches a fixed procedure; a live simulation teaches by consequence; a digital twin mirrors a live system, no lesson.
-- **What is assessed?** → a knowledge check, procedural scoring, a demonstrated skill, or analytics only — never both.
-- **Delivery standard?** → xAPI (statements to a Learning Record Store, C-060); SCORM 2004 for a packaged course; SCORM 1.2 for legacy portals; custom last.
-- **Step authoring?** → linear for a fixed sequence, a branched tree when the learner chooses, free practice when the score comes from doing.
-- **CAD content?** → import as data: units → axes → scale (C-119) → decimate → LOD (C-091) → Addressables (C-007), each stage gated.
-- **Scoring, offline, identity?** → discrete events only, never rendered state (C-061); queue statements and flush on reconnect; the learner is an opaque LMS id.
+- A training module teaches a fixed procedure, or a live simulation teaches
+  by consequence.
+- The assessment is open: a knowledge check, procedural scoring or a
+  demonstrated skill.
+- The delivery standard is open: xAPI, SCORM 2004, SCORM 1.2 or custom.
+- A digital twin mirrors a live system, or CAD content has to be imported.
+- Learner data, consent or retention has to be designed in.
+
+## When not to use
+
+- A question about Unity itself rather than a change -> stay in the router,
+  [../unity-loom/SKILL.md](../unity-loom/SKILL.md).
+- A game with no learning objective and no record ->
+  [../loom-project/SKILL.md](../loom-project/SKILL.md).
+- The headset rig, the comfort model or the passthrough setup ->
+  [../loom-xr/SKILL.md](../loom-xr/SKILL.md).
+- The interface, the menus or the audio routing of the module ->
+  [../loom-ui-audio/SKILL.md](../loom-ui-audio/SKILL.md).
+- A frame-time or memory problem in the module ->
+  [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
+- Packaging, the store or the privacy declaration ->
+  [../loom-release/SKILL.md](../loom-release/SKILL.md).
+
+## Pick the approach
+
+| Question | Choose |
+|---|---|
+| What is being built | a module that teaches a fixed procedure, a live simulation that teaches by consequence, or a digital twin that mirrors a live system with no lesson |
+| What is assessed | a knowledge check, procedural scoring, a demonstrated skill, or analytics only; never two at once |
+| Delivery standard | xAPI for statements to a Learning Record Store (C-060); SCORM 2004 for a packaged course, SCORM 1.2 for a legacy portal; custom last |
+| Step authoring | linear for a fixed sequence, a branched tree when the learner chooses, free practice when the score comes from doing |
+| CAD content | import as data: units, axes, scale (C-119), decimation, LOD (C-091), then Addressables (C-007), each stage gated |
+| Scoring, offline, identity | discrete events only, never rendered state (C-061); queue the statements and flush them on reconnect; the learner is an opaque LMS id |
 
 ## Setup defaults
 
-| Area | Default |
-|---|---|
-| Procedure model | one `ScriptableObject` per procedure (C-076); steps are `[Serializable]` types with `SerializeReference` subclasses (C-175), with success, failure, resume |
-| Events and scoring | one table of verb and object ids across devices; every event carries a stable id and a monotonic clock; per-step weights, a critical-fail flag, the best attempt per step, a fixed-order total; attempt state persists in a versioned local record |
-| Identity and retention | an opaque LMS id, never a name or email; a retention period and a deletion path |
-| Offline and consent | an append-only queue that survives a restart and flushes in order, behind an explicit opt-in |
-| Delivery | xAPI actor = learner id, verb = event verb, object = step id (C-104); SCORM: one package, one SCO per procedure, `success` from the score |
-| Digital twin and authoring | every CAD and IoT feed carries units, coordinate frame and sample time; a unit mismatch fails the import; instructors edit data, analytics aggregate server-side |
+| Area | Default | Evidence |
+|---|---|---|
+| Procedure model | one `ScriptableObject` per procedure, with `[Serializable]` steps that carry `SerializeReference` subclasses (C-175) | C-076, Project default - tune against the procedure set |
+| Events and scoring | one table of verb and object ids across the devices, a stable id and a monotonic clock on every event, per-step weights, a critical-fail flag, the best attempt per step, a fixed-order total | Project default - tune against the scoring rubric |
+| Attempt state | a versioned local record that survives a restart | Project default - tune against the attempt history |
+| Identity and retention | an opaque LMS id, never a name or an email, with a retention period and a deletion path | Project default - tune against the data-protection rules |
+| Offline and consent | an append-only queue that survives a restart and flushes in order, behind an explicit opt-in | Project default - tune against the offline policy |
+| Delivery | an xAPI statement is a JSON record with an actor, a verb and an object (C-212); the result and the context are optional (C-155) | C-212, C-155 |
+| SCORM | one package, one SCO per procedure, with the completion status the LMS records (C-211) | C-211 |
+| Digital twin and authoring | every CAD and IoT feed carries units, a coordinate frame and a sample time; a unit mismatch fails the import | Project default - tune against the imported feeds |
 
-## Idiomatic examples
+## Examples
 
-### A step definition with a polymorphic behaviour
+A step definition with a polymorphic behaviour.
 
 ```csharp
 using System;
@@ -63,7 +93,7 @@ public sealed class StepDefinition : ScriptableObject
 }
 ```
 
-### A deterministic event log and scorer
+A deterministic event log and scorer.
 
 ```csharp
 using System.Collections.Generic;
@@ -84,20 +114,35 @@ public sealed class ScoringEngine
 }
 ```
 
-### An xAPI builder and a reconnecting queue
+An xAPI statement built by a serializer, and a reconnecting queue. The
+serializer escapes every value, so no field is concatenated into the JSON
+by hand.
 
 ```csharp
+using System;
 using System.Collections.Generic;
 using System.IO;
-public static class XapiStatement
+using UnityEngine;
+
+[Serializable] public sealed class XapiStatement
 {
+    [Serializable] public sealed class Actor { public string objectType = "Agent"; public string name; }
+    [Serializable] public sealed class Verb { public string id; }
+    [Serializable] public sealed class Activity { public string id; }
+    public Actor actor;
+    public Verb verb;
+    public Activity @object;
+    public string timestamp;
+
+    // An xAPI statement is a JSON record with an actor, a verb and an object (C-212).
     public static string Build(string actorId, string verbId, string activityId, string timestamp)
-    {
-        // actor, verb and object are the required parts of a statement (C-104)
-        return "{\"actor\":{\"objectType\":\"Agent\",\"name\":\"" + actorId + "\"},"
-             + "\"verb\":{\"id\":\"" + verbId + "\"},\"object\":{\"id\":\"" + activityId + "\"},"
-             + "\"timestamp\":\"" + timestamp + "\"}";
-    }
+        => JsonUtility.ToJson(new XapiStatement
+        {
+            actor = new Actor { name = actorId },
+            verb = new Verb { id = verbId },
+            @object = new Activity { id = activityId },
+            timestamp = timestamp,
+        });
 }
 public interface IStatementSender { bool TrySend(string statement); }
 public sealed class StatementQueue
@@ -110,26 +155,19 @@ public sealed class StatementQueue
 }
 ```
 
-Escape interpolated values; use a JSON serializer. The result and the context of a statement are optional (C-155). Keep the queue file under `Application.persistentDataPath` (C-177).
+Keep the queue file under `Application.persistentDataPath` (C-177).
 
-### A CAD import verification gate
+A CAD import verification gate.
 
 ```csharp
 using System;
 using UnityEngine;
-// Pipeline: units → axes → metres, Y-up → scale → decimate → LOD → Addressables (C-007).
+// Pipeline: units, axes, metres, decimation, LOD, then Addressables (C-007).
 public static class CadGate
 {
     public static bool ScaleMatches(Bounds b, double expected, double tol = 0.005) { double m = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z)); return Math.Abs(m - expected) / expected <= tol; }
 }
 ```
-
-## Privacy and security
-
-- Learner telemetry, performance data, MR sensor data and instructor authoring data are personal data: consent, minimisation, retention and deletion apply ([doctrine/01-safety.md](../../doctrine/01-safety.md)).
-- No credentials in the client: a statement carries an opaque learner id, never a secret or an email.
-- No learner data to a third party without a documented purpose and retention period.
-- Collect consent in-product with a working opt-out before the first statement leaves.
 
 ## Red lines
 
@@ -140,18 +178,24 @@ public static class CadGate
 - No hard-coded LMS or LRS endpoint in the build; read it from configuration (C-060).
 - No unscaled or unit-ambiguous CAD geometry.
 - No network call that blocks the simulation loop.
+- No statement assembled by concatenating raw strings; use a serializer.
+- No learner data to a third party without a documented purpose and a
+  retention period.
+- No collection before the consent step, and no collection after the
+  opt-out.
 
 ## Verify
 
 - A test scene completes the procedure and reports the expected score.
 - The same input sequence yields the same score twice, in fresh sessions.
 - An emitted xAPI statement validates against a local schema copy.
-- Offline mode queues statements, survives a restart and flushes on reconnect.
-- The data model, scorer and statement builder are covered by unit tests.
+- Offline mode queues the statements, survives a restart and flushes on reconnect.
+- The data model, the scorer and the statement builder are covered by unit tests.
+- The `Done when` gate of [workflows/simulation.md](../../workflows/simulation.md) passes.
 
 ## Handoff
 
-- XR runtime, comfort and headset deployment → [../loom-xr/SKILL.md](../loom-xr/SKILL.md).
-- Step-graph architecture, save and resume, data → [../loom-project/SKILL.md](../loom-project/SKILL.md).
-- Frame stability under heavy scenes → [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
-- Builds, CI, store and privacy compliance → [../loom-release/SKILL.md](../loom-release/SKILL.md).
+- XR runtime, comfort and headset deployment -> [../loom-xr/SKILL.md](../loom-xr/SKILL.md).
+- Step-graph architecture, save and resume, data -> [../loom-project/SKILL.md](../loom-project/SKILL.md).
+- Frame stability under heavy scenes -> [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
+- Builds, CI, store and privacy compliance -> [../loom-release/SKILL.md](../loom-release/SKILL.md).

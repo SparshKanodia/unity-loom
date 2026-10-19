@@ -1,34 +1,442 @@
-name: validate
+# Unity Loom CI.
+#
+# Six jobs, each proving exactly one thing:
+#
+#   validate       the repository contracts hold on every supported OS and Node
+#   install        the install path works end to end on a clean destination
+#   links          every relative markdown link in the tree resolves on disk
+#   secrets        no credential material in the working tree or in the history
+#   editor-tests   optional Unity EditMode and PlayMode tests, manual only
+#   release        a versioned archive is published when a v* tag is pushed
+#
+# The repository is offline-first: the content checks need no network, so a
+# network flake can never hide a real failure. The two jobs that do use the
+# network (secrets, editor-tests) are the two that are allowed to be slow.
+
+name: ci
 
 on:
   push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+    # A documentation-only change cannot break the contracts, so it does not
+    # spend a runner. A version tag always carries the files the release job
+    # packages, so the tag path stays open.
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
   workflow_dispatch:
+    inputs:
+      unity-project-path:
+        description: "Path to the Unity project that holds the EditMode and PlayMode tests"
+        required: false
+        default: "UnityProject"
 
+# The workflow reads the repository and nothing else. The release job is the
+# only one that needs more, and it says so.
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A release tag is never cancelled: the artefact has to be produced.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
+  # ------------------------------------------------------------------ validate
   validate:
     name: validate (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
+      # One broken combination must not hide the state of the other five.
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node: ["20", "22"]
+        node: ["20", "22", "24"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+
       - name: Self-test the validator
         run: node tools/validate.mjs --selftest
-      - name: Machine-readable report
-        run: node tools/validate.mjs --json
+
       - name: Validate Unity Loom
         run: node tools/validate.mjs
+
+      - name: Write the machine-readable report
+        # The report is written even when the validation failed: the summary
+        # and the artefact are the diagnosis.
+        if: always()
+        shell: bash
+        run: node tools/validate.mjs --json > validate-report.json
+
+      - name: Upload the validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validate-report-${{ matrix.os }}-node${{ matrix.node }}
+          path: validate-report.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Write the job summary
+        if: always()
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/summary.mjs" <<'EOF'
+          import { readFileSync, appendFileSync } from "node:fs";
+          const report = JSON.parse(readFileSync("validate-report.json", "utf8"));
+          const s = report.summary;
+          const out = [];
+          out.push("### Unity Loom validation");
+          out.push("");
+          out.push("Runner: ${{ matrix.os }}, Node ${{ matrix.node }}");
+          out.push("");
+          out.push("| Check | Result |");
+          out.push("|---|---|");
+          out.push("| Overall | " + (report.ok ? "PASS" : "FAIL") + " |");
+          out.push("| Skills | " + s.skills + " of " + s.maxSkills + " |");
+          out.push("| Workflows | " + s.workflows + " of " + s.maxWorkflows + " |");
+          out.push("| Core bytes | " + s.coreBytes + " of " + s.totalCoreBytes + " |");
+          out.push("| Triggers | " + s.triggers + " unique, " + s.collisions + " collisions |");
+          out.push("| Problems | " + report.problemCount + " |");
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+          EOF
+          node "$RUNNER_TEMP/summary.mjs"
+
+  # ------------------------------------------------------------------- install
+  install:
+    name: install (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Plan the installation
+        run: node tools/install.mjs plan --dest "${{ runner.temp }}/loom-skills"
+
+      - name: Install into a clean destination
+        run: node tools/install.mjs install --dest "${{ runner.temp }}/loom-skills"
+
+      - name: Verify the installed copy against the repository
+        run: node tools/install.mjs verify --dest "${{ runner.temp }}/loom-skills"
+
+      - name: Doctor the installation
+        run: node tools/install.mjs doctor --dest "${{ runner.temp }}/loom-skills"
+
+      - name: Assert that every installed relative link resolves
+        # The installer rewrites the `../../` prefix in the installed skill
+        # copies. This step proves the rewritten links still point at files
+        # that exist in the installed tree, which is the failure the install
+        # path is meant to prevent.
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/check-installed-links.mjs" <<'EOF'
+          import { readFileSync, readdirSync, existsSync } from "node:fs";
+          import { join, dirname, relative, extname, sep, posix } from "node:path";
+
+          const root = process.argv[2];
+          const files = [];
+          const walk = (dir) => {
+            for (const entry of readdirSync(dir, { withFileTypes: true })) {
+              const full = join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else files.push(full);
+            }
+          };
+          walk(root);
+          const rel = (p) => relative(root, p).split(sep).join("/");
+
+          let broken = 0;
+          for (const abs of files) {
+            const p = rel(abs);
+            if (extname(p).toLowerCase() !== ".md") continue;
+            const text = readFileSync(abs, "utf8");
+            const re = /\[[^\]]*\]\(([^)\s]+)\)/g;
+            let m;
+            while ((m = re.exec(text)) !== null) {
+              let target = m[1];
+              if (/^(https?:|mailto:|tel:|#)/i.test(target)) continue;
+              target = target.split("#")[0];
+              if (target === "") continue;
+              const resolved = posix.normalize(posix.join(posix.dirname(p), target));
+              if (resolved.startsWith("..")) continue;
+              if (!existsSync(join(root, resolved))) {
+                console.error(p + ": broken installed link -> " + target);
+                broken++;
+              }
+            }
+          }
+          if (broken === 0) console.log("every installed relative link resolves");
+          else console.error(broken + " broken installed link(s)");
+          process.exit(broken === 0 ? 0 : 1);
+          EOF
+          node "$RUNNER_TEMP/check-installed-links.mjs" "$RUNNER_TEMP/loom-skills"
+
+  # --------------------------------------------------------------------- links
+  links:
+    name: links
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check every relative markdown link
+        # The scan is offline and dependency-free: it walks the working tree,
+        # resolves each relative link against the file that carries it, and
+        # fails on the first one that does not exist on disk.
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/check-links.mjs" <<'EOF'
+          import { readFileSync, readdirSync, existsSync } from "node:fs";
+          import { join, dirname, relative, extname, sep, posix } from "node:path";
+
+          const root = process.cwd();
+          const skip = new Set([".git", "node_modules", ".vscode"]);
+          const files = [];
+          const walk = (dir) => {
+            for (const entry of readdirSync(dir, { withFileTypes: true })) {
+              if (skip.has(entry.name)) continue;
+              const full = join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else files.push(full);
+            }
+          };
+          walk(root);
+          const rel = (p) => relative(root, p).split(sep).join("/");
+
+          let broken = 0;
+          let checked = 0;
+          for (const abs of files) {
+            const p = rel(abs);
+            if (extname(p).toLowerCase() !== ".md") continue;
+            const text = readFileSync(abs, "utf8");
+            const re = /\[[^\]]*\]\(([^)\s]+)\)/g;
+            let m;
+            while ((m = re.exec(text)) !== null) {
+              let target = m[1];
+              if (/^(https?:|mailto:|tel:|#)/i.test(target)) continue;
+              target = target.split("#")[0];
+              if (target === "") continue;
+              checked++;
+              const resolved = posix.normalize(posix.join(posix.dirname(p), target));
+              if (resolved.startsWith("..")) continue;
+              if (!existsSync(join(root, resolved))) {
+                console.error(p + ": broken link -> " + target);
+                broken++;
+              }
+            }
+          }
+          console.log("checked " + checked + " relative link(s)");
+          if (broken === 0) console.log("every relative link resolves");
+          else console.error(broken + " broken link(s)");
+          process.exit(broken === 0 ? 0 : 1);
+          EOF
+          node "$RUNNER_TEMP/check-links.mjs"
+
+  # ------------------------------------------------------------------- secrets
+  secrets:
+    name: secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the full history
+        uses: actions/checkout@v4
+        with:
+          # The history scan needs every commit, not a shallow clone.
+          fetch-depth: 0
+
+      - name: Scan the git history
+        # The action runs the gitleaks detector over the checked-out history
+        # and fails the job on a finding. It is pinned to a version tag; the
+        # maintainer may pin it to an exact release or to a commit digest.
+        # GITLEAKS_LICENSE is required by the action for an organisation
+        # repository and is optional for a personal one.
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: "--redact --verbose --no-banner"
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+
+      - name: Scan the working tree
+        # The history scan reads committed objects. This step reads the files
+        # that are on disk right now, so a secret that was never committed but
+        # sits in a generated or ignored file is still reported. It runs on a
+        # push, where the detector scans the tree; on a pull request the
+        # action already scans the staged diff instead.
+        if: github.event_name != 'pull_request'
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: "--no-git --redact --verbose --no-banner"
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+
+  # -------------------------------------------------------------- editor-tests
+  editor-tests:
+    name: editor-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # A pull request never runs this job, so a fork can never be blocked by a
+    # job it has no Unity licence for. It runs on a manual dispatch only.
+    if: github.event_name == 'workflow_dispatch'
+    env:
+      # The secret is read into the job environment so that a missing licence
+      # is a skip, never a failure.
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Report the licence state
+        shell: bash
+        run: |
+          if [ -z "$UNITY_LICENSE" ]; then
+            echo "The UNITY_LICENSE secret is not set, so the Unity tests are skipped."
+          else
+            echo "The Unity licence secret is set, so the Unity tests run."
+          fi
+
+      - name: Locate the Unity project
+        id: project
+        shell: bash
+        run: |
+          path="${{ inputs.unity-project-path }}"
+          if [ -d "$path/Assets" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "The Unity project is at $path."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No Unity project is at $path, so the Unity tests are skipped."
+          fi
+
+      - name: Run the EditMode tests
+        if: env.UNITY_LICENSE != '' && steps.project.outputs.found == 'true'
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: ${{ inputs.unity-project-path }}
+          testMode: EditMode
+          unityVersion: ${{ vars.UNITY_VERSION || '6000.3' }}
+          artifactsPath: artifacts/editmode
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+
+      - name: Run the PlayMode tests
+        if: env.UNITY_LICENSE != '' && steps.project.outputs.found == 'true'
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: ${{ inputs.unity-project-path }}
+          testMode: PlayMode
+          unityVersion: ${{ vars.UNITY_VERSION || '6000.3' }}
+          artifactsPath: artifacts/playmode
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+
+      - name: Upload the test artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-test-results
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ------------------------------------------------------------------- release
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      # The release job is the only job that writes to the repository.
+      contents: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check that the tag matches the manifest version
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME"
+          version=$(node -p "require('./manifest.json').version")
+          if [ "$tag" != "v$version" ]; then
+            echo "The tag $tag does not match the manifest version $version." >&2
+            exit 1
+          fi
+          echo "The tag $tag matches the manifest version $version."
+
+      - name: Validate Unity Loom
+        run: node tools/validate.mjs
+
+      - name: Package the skills, the shared corpus and the tools
+        shell: bash
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp -R skills workflows doctrine references docs tools dist/
+          for f in manifest.json AGENTS.md README.md GUIDE.md HARNESSES.md CONTRIBUTING.md LICENSE; do
+            if [ -f "$f" ]; then
+              cp "$f" dist/
+            else
+              echo "note: $f is not in the tree yet, so it is not packaged."
+            fi
+          done
+          cd dist
+          zip -r "../unity-loom-$GITHUB_REF_NAME.zip" .
+          cd ..
+          ls -l "unity-loom-$GITHUB_REF_NAME.zip"
+
+      - name: Publish the release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: unity-loom-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true

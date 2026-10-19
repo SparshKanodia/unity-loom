@@ -44,10 +44,11 @@ Never paste these, even when the tool emits them:
 
 ## 4. Context arithmetic
 
-The repository's own limits are listed in
-[docs/06-context-budget.md](../docs/06-context-budget.md): all skills together ≤ 64 KB, one
-domain skill ≤ 8 KB. The whole system is a fraction of a context window, so a single skill
-should never cost more than a few thousand tokens.
+The repository's own limits live in [manifest.json](../manifest.json) under `budgets`,
+and in prose in [docs/06-context-budget.md](../docs/06-context-budget.md). Read the
+caps there; do not repeat a number here, because a restated number drifts from the
+one that is enforced. The whole system is a fraction of a context window, so a single
+skill should never cost more than a few thousand tokens.
 
 - A task loads one domain skill plus at most one workflow and one reference at a time.
 - Pull a claim from the registry only when you assert it. Never preload the registry.

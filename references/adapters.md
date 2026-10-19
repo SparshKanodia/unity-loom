@@ -4,6 +4,8 @@ Adapters are **optional**. They are detected, never required, and never installe
 
 > **Naming.** Exact tool names, endpoints and argument shapes vary by bridge version and by vendor. Treat every name below as a *role*, and discover the real name at runtime from the bridge's own tool list. Never hard-code a tool name you have not just seen.
 
+> **Handoff.** When no adapter can cover a step, the answer is a `HUMAN HANDOFF` block. One shape exists, and it is owned by [doctrine/01-safety.md](../doctrine/01-safety.md) §11.
+
 ## 1. The four adapters
 
 | Adapter | Tier | Unlocks | Detect by | Health check | If absent |
@@ -13,7 +15,12 @@ Adapters are **optional**. They are detected, never required, and never installe
 | UCP-style control protocol | T2 | catalog-driven remote control of an editor over a port | the control endpoint answers a version/catalog call | version/catalog call returns the tool list and the project root | same as the editor bridge: fall back to T1, then T0 |
 | Device tooling (`adb`, `metavr`, Xcode tools) | T3 | install, launch, device logs, traces, thermal readings | `adb devices` / `xcrun xctrace list devices` lists a device | the device list names one reachable device | build an artifact and hand device testing to a human |
 
-Two adapters can be present at once (a bridge *and* a device). Report the tier per wish, not per project: a device-backed measurement is T3 even when the edit that produced it was T2.
+Two adapters can be present at once (a bridge *and* a device). The operating tier
+is per task: it is chosen once, held for the task, and stated with the probe
+output that supports it (see [doctrine/02-capabilities.md](../doctrine/02-capabilities.md) §7).
+Every individual measurement carries its own tier and reports it with the
+measurement: a device-backed measurement is T3 even when the edit that produced
+it was T2.
 
 ## 2. Unity CLI
 
@@ -202,7 +209,8 @@ SYMPTOM: the result is stale (an older build's numbers)
     older -> the proof belongs to a previous build; rebuild and re-measure
 ```
 
-Report the tier, the probe output that supports it, and the fallback you used. One line each.
+Each measurement states the tier it was taken at, the probe output behind it, and
+the fallback that was used. One line each.
 
 ## 8. Recording adapter state
 

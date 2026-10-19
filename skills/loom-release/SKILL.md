@@ -1,62 +1,86 @@
 ---
 name: loom-release
-description: "Unity build, test, CI/CD and release: Build Profiles, IL2CPP and stripping, EditMode and PlayMode tests, GitHub Actions with GameCI, crash reporting, store submission and shipping security/privacy. Use when building, testing, automating or shipping a Unity project."
+description: "Use for Unity build, test, CI and release work: Build Profiles, IL2CPP and stripping, EditMode and PlayMode tests, GitHub Actions with GameCI, crash reporting, store submission and shipping security and privacy. Apply it whenever a project is built, tested, automated or shipped."
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 metadata:
   loom: 1
   domain: release
   tier: 9
   triggers: ["build", "build profile", "ci", "cd", "gameci", "il2cpp", "test", "unit test", "playmode", "editmode", "ship", "release", "store submission", "crash reporting", "security", "privacy", "obfuscation"]
-  budget: { lines: 320, bytes: 14000 }
+  budget: { lines: 340, bytes: 16000 }
   verified-against: ["Unity 6000.3 LTS"]
   sources: ["docs.unity3d.com/6000.3/Documentation/Manual/BuildSettings.html", "docs.unity3d.com/6000.3/Documentation/Manual/Testing.html", "game.ci/docs"]
 ---
 
 # loom-release — Build, Test & Ship
 
-Router role: pick the release kind, apply the defaults, then run [workflows/release.md](../../workflows/release.md). Test invocation is capability-tiered (ADR-0011).
+Router role: pick the release kind, apply the defaults, then run
+[workflows/release.md](../../workflows/release.md). Test invocation is
+capability-tiered (ADR-0011).
 
-## 1. What kind of release am I making?
+## When to use
 
-1. Public distribution channel? → **store build**.
-2. A named tester group only? → **internal playtest**.
-3. A change to something already shipped? → **hotfix**.
-4. Local iteration only? → **dev build**.
+- A build has to be produced, signed or archived.
+- The build profiles, the scripting backend or the stripping level are open.
+- A test suite has to run, in the editor or in CI.
+- The pipeline has to be automated, or a CI stage is failing.
+- The project is submitted to a store, or a crash reporter is added.
+- The security or the privacy posture of the shipped build is reviewed.
 
-| Kind | Required pipeline | Evidence | Risk |
-|---|---|---|---|
-| Dev | Local build on the `dev` profile | Build log, zero errors | Low; never distributed |
-| Internal playtest | CI build on `internal`, tester-group signing | Artifact, checksum, tester install | Medium; leaks without a profile gate |
-| Store | CI build on `store`, IL2CPP, symbols, metadata, privacy declaration | Checksummed artifact, device install, receipt | High; rejection, takedown, privacy fault |
-| Hotfix | Branch from the shipped tag, narrow diff, full matrix | Delta list, green matrix, checksum | High; behaviour drift |
+## When not to use
 
-## 2. Pipeline defaults
+- A question about Unity itself rather than a change -> stay in the router,
+  [../unity-loom/SKILL.md](../unity-loom/SKILL.md).
+- The frame rate, the thermals or the memory budget ->
+  [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
+- The folder layout, the assemblies or the data architecture ->
+  [../loom-project/SKILL.md](../loom-project/SKILL.md).
+- The look of the game -> [../loom-graphics/SKILL.md](../loom-graphics/SKILL.md).
+- The privacy of training data and the learner records ->
+  [../loom-simulation/SKILL.md](../loom-simulation/SKILL.md).
+
+## Pick the approach
+
+| Kind | Profile | Required pipeline | Evidence | Risk |
+|---|---|---|---|---|
+| Dev | `dev` | a local build on the `dev` profile | build log, zero errors | Low; never distributed |
+| Internal playtest | `internal` | a CI build with tester-group signing | artifact, checksum, tester install | Medium; leaks without a profile gate |
+| Store | `store` | a CI build with IL2CPP, symbols, metadata and a privacy declaration | checksummed artifact, device install, receipt | High; rejection, takedown, privacy fault |
+| Hotfix | `internal` for the test build, `store` for the fix | a branch from the shipped tag, a narrow diff, the full matrix | delta list, green matrix, checksum | High; behaviour drift |
+
+There are exactly three profiles, and they are named in
+[workflows/foundation.md](../../workflows/foundation.md) phase 6: `dev`,
+`internal` and `store` (C-051, C-142).
+
+## Setup defaults
 
 | Setting | Default | Source |
 |---|---|---|
-| Editor + packages | Pinned in manifest + lock, copied to the build manifest | ADR-0004 |
-| Tooling CLI | Latest agent tooling, version logged per run | ADR-0004 |
-| Build profiles | `dev`, `internal`, `store`, defines per profile | C-051, C-142 |
+| Editor and packages | pinned in the manifest and the lock, copied into the build manifest | ADR-0004 |
+| Tooling CLI | the latest agent tooling, with the version logged per run | ADR-0004 |
+| Build profiles | `dev`, `internal` and `store`, with defines per profile | C-051, C-142 |
 | Scripting backend | IL2CPP for shipping; Mono only where AOT is impossible | C-052, C-100 |
 | Managed stripping | `Minimal` until a device test proves a higher level | C-146, C-147 |
-| Reflection under IL2CPP | Preserve each reflected type, then prove on device | C-147 |
+| Reflection under IL2CPP | preserve each reflected type, then prove it on a device | C-147 |
 | Engine code stripping | `PlayerSettings.stripEngineCode` on for an IL2CPP store build | C-150 |
-| Tests | EditMode for logic, PlayMode for scene and physics; T1 `unity test`, T0 batchmode recipe, never both | ADR-0011, C-050 |
-| Build time + size | Record minutes and size per target, set a size ceiling | — |
-| Symbols | Per-build bundle kept with the artifact and the reporter | — |
-| Versioning | `major.minor.patch+sha.buildNumber` from CI or commit count | — |
-| Determinism | Fixed editor, pinned packages, no generated files in VCS | ADR-0004 |
-| Retention | Kept for the support window, checksum recorded | — |
-| Store metadata | Version, changelog, screenshots, age rating, privacy URL | — |
-| Privacy declaration | Derived from real data flows, reviewed before submission | doctrine 01 |
-| Crash reporting | Opt-in, disclosed, consent-gated, symbols attached | doctrine 01 |
-| Obfuscation | Optional post-process on the artifact, not a security control | — |
+| Tests | EditMode for logic, PlayMode for scene and physics, a Play Mode test marked with `[UnityTest]` (C-098) | ADR-0011, C-050, C-098 |
+| Test invocation | T1 `unity test`, T0 the batchmode recipe, never both | ADR-0011 |
+| Build time and size | record the minutes and the size per target, and set a size ceiling | Project default - tune against the store limit |
+| Symbols | one bundle per build, kept with the artifact and the reporter | Project default - tune against the crash-reporting flow |
+| Versioning | `major.minor.patch+sha.buildNumber`, from CI or the commit count | Project default - tune against the release process |
+| Determinism | a fixed editor, pinned packages, no generated files in version control | ADR-0004 |
+| Retention | kept for the support window, with the checksum recorded | Project default - tune against the support window |
+| Store metadata | version, changelog, screenshots, age rating, privacy URL | Project default - tune against the store checklist |
+| Privacy declaration | derived from the real data flows, reviewed before the submission | doctrine 01 |
+| Crash reporting | opt-in, disclosed, consent-gated, with the symbols attached | doctrine 01 |
+| Obfuscation | an optional post-process on the artifact, not a security control | Project default - tune against the reverse-engineering risk |
 
-## 3. Idiomatic examples
+## Examples
 
-Flag spellings move between editor versions: confirm them with `<editor> -help` before wiring a command into CI.
+Flag spellings move between editor versions: confirm them with
+`<editor> -help` before wiring a command into CI.
 
-CI pipeline (GitHub Actions + GameCI) (C-053):
+CI pipeline (GitHub Actions and GameCI) (C-053):
 ```yaml
 on: [push, pull_request]
 jobs:
@@ -81,7 +105,8 @@ jobs:
         with: { name: builds-${{ github.run_number }}, path: artifacts/ }
 ```
 
-Batchmode test — the T0 recipe from ADR-0011, with the command-line arguments the test framework defines (C-144):
+Batchmode test — the T0 recipe from ADR-0011, with the command-line
+arguments the test framework defines (C-144):
 ```bash
 "$UNITY_EDITOR" -batchmode -nographics -projectPath "$PROJECT" \
   -runTests -testPlatform EditMode \
@@ -97,7 +122,9 @@ Build:
   -logFile "$ARTIFACTS/build.log"
 ```
 
-Editor build script (`Assets/Editor/Build/BuildScript.cs`): `BuildProfileData` is a project-owned helper that loads the build profile — it is not a Unity API. The Unity calls below are checked against 6000.3.
+Editor build script (`Assets/Editor/Build/BuildScript.cs`): `BuildProfileData`
+is a project-owned helper that loads the build profile — it is not a Unity
+API. The Unity calls below are checked against 6000.3.
 ```csharp
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -122,7 +149,8 @@ public static class BuildScript
 }
 ```
 
-A programmatic build invalidates editor variables that reference GameObjects (C-151); re-resolve them after the build.
+A programmatic build invalidates editor variables that reference GameObjects
+(C-151); re-resolve them after the build.
 
 Opt-in build guard — inactive unless the active profile turns it on. Unity 6
 names the build callbacks `IPreprocessBuildWithContext` and
@@ -153,7 +181,7 @@ BUILD_NUMBER="${BUILD_NUMBER:-$(git rev-list --count HEAD)}"
 export VERSION="${GIT_TAG}+${GIT_SHA}.${BUILD_NUMBER}"
 ```
 
-## 4. Red lines
+## Red lines
 
 - No unpinned editor or package version on a release branch.
 - No shipping without a green test run and archived results.
@@ -165,19 +193,25 @@ export VERSION="${GIT_TAG}+${GIT_SHA}.${BUILD_NUMBER}"
 - No auto-injected editor hooks or auto-running detectors.
 - No mutable `latest` tag anywhere in a release pipeline.
 - No unreviewed privacy or data-safety declaration.
+- No `-quit` next to `-runTests`; the editor quits before the tests finish
+  (C-148).
+- No feature gated on `Application.internetReachability`; it reports the
+  network type, not connectivity (C-149).
+- No fourth build profile, and no profile outside `dev`, `internal` and
+  `store`.
 
-## 5. Verify
+## Verify
 
-- A green test run, results file archived beside the artifact.
+- A green test run, with the results file archived beside the artifact.
 - A produced artifact with a recorded SHA-256 checksum.
 - A signed build that installs on a device and reaches the main menu.
 - A compliance and privacy checklist signed off by a human.
 - A crash-free session log from a run of the shipped build.
-- `Done when` from [workflows/release.md](../../workflows/release.md) is satisfied.
+- The `Done when` gate of [workflows/release.md](../../workflows/release.md) passes.
 
-## 6. Handoff
+## Handoff
 
-- Frame rate, thermals, budgets → [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
-- Store rules for headsets → [../loom-xr/SKILL.md](../loom-xr/SKILL.md).
-- Privacy of training data → [../loom-simulation/SKILL.md](../loom-simulation/SKILL.md).
-- Testable architecture → [../loom-project/SKILL.md](../loom-project/SKILL.md).
+- Frame rate, thermals, budgets -> [../loom-performance/SKILL.md](../loom-performance/SKILL.md).
+- Store rules for headsets -> [../loom-xr/SKILL.md](../loom-xr/SKILL.md).
+- Privacy of training data -> [../loom-simulation/SKILL.md](../loom-simulation/SKILL.md).
+- Testable architecture -> [../loom-project/SKILL.md](../loom-project/SKILL.md).

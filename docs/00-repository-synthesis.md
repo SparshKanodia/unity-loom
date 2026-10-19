@@ -8,6 +8,32 @@
 
 ---
 
+## 0. The problem this repository exists to solve
+
+A Unity developer who wants an AI agent to help with their project cannot get a correct answer by picking the best repository. There is no best repository, because the same domains are covered by **three to five** separate upstream packs and they disagree.
+
+**The advice conflicts.** XR, 2D, performance, UI, multiplayer, save systems and architecture are each covered by three to five upstreams with different advice (§4). The result is **12 named conflicts with a severity rating each** — two of them critical (§5). A deprecated XR interaction model sits in one pack's examples while another pack lists the same API as a hallucination to avoid (C1). Ten skill names mean different things in different packs (C8, critical). An agent that reads two packs has not gained knowledge; it has gained a coin flip.
+
+**The tooling breaks.** The failures are not stylistic. They are mined from the issue trackers of the source repositories, and they fall into **18 clusters** (§6): fifteen that upstream issue trackers evidence, and three more that no upstream reports but that this repository's own governance has to survive (F16, F17, F18). The heaviest are not wrong answers but **no** answers:
+
+| What the user sees | Cluster | Where it comes from |
+|---|---|---|
+| A skill that never loads at all, with no error | F6 | an unquoted YAML colon broke four of twenty-nine skills in one pack |
+| "Tools are often run without first ensuring the editor has updated" | F2 | acting before the asset database refreshes |
+| A single tool response of roughly thirteen thousand tokens | F5 | unfiltered output |
+| The editor stuck in an infinite recompile loop | F9 | a detector the tool installed on its own |
+| Missing-script warnings across the whole project | F10 | a GUID that collided with another package |
+
+The setup cost is the first thing a user meets and the last thing a maintainer fixes: wrong plugin names, wrong per-client commands, auto-setup that fails on one client and works on the next (F3, §2 A/B, F, G). The packs also disagree about what a test command is (C2) and about whether a version should be pinned or floated (C9), so the user is left choosing.
+
+**The obvious fix makes it worse.** The natural response is to copy five repositories into one. That reproduces every conflict above in a single namespace, doubles the context cost of every request, and re-creates the exact failure the ecosystem already has: two skills claiming the same trigger. The trap is that each individual repository is good. The problem is the set.
+
+So the product is not "a better Unity skill set". It is a **synthesis**: one place where each fact is stated once, one rule that decides conflicts, one registry of claims with a source and a version, and a core that requires nothing to be installed. Everything in §7 exists because a named upstream failure forced it.
+
+The rest of this document is the evidence: what was read (§1, §2), how the formats compare (§3), where the duplication is (§4), the conflicts and their severity (§5), the failure clusters and their root causes (§6), what is kept and dropped (§7), the citation ledger (§8) and the open risks (§9).
+
+---
+
 ## 1. Sources reviewed
 
 ### 1.1 Skill / agent repositories (primary)
@@ -27,6 +53,8 @@
 | K | `jack-arturo/skillissue` | — | (check) | includes `unity-quest-build` | flat skills | Unity CLI, adb |
 | L | `marcosotomac/unity-ai` | — | (check) | control-plane (not skills) | MCP + Editor plugin | Unity Editor |
 | M | `skillsdirectory.com` → Claude Dev Suite `unity-xr` | — | free | 1 skill (4.2 KB) | single SKILL.md | none |
+
+Source M is **not a GitHub repository**. It is a single skill published on a skills directory site, credited in `references/upstream.md` and in `manifest.json` under `skillsdirectory.com/Claude-Dev-Suite/unity-xr`. It was read for the XR naming landscape, and its licence is not stated on the page, so it is treated as a read-only reference like the other unlicensed sources.
 
 ### 1.2 Knowledge / awesome-list repositories (secondary — link sources only)
 `baba-s/awesome-unity-open-source-on-github` (4.5k★, Unlicense), `michidk/Unity-Script-Collection` (6.4k★, GPL-3.0 repo), `insthync/awesome-unity3d` (2.7k★, Unlicense), `StefanoCecere/awesome-opensource-unity` (2.3k★, CC0), `UnityCommunity/AwesomeUnityCommunity` (659★, CC0), `netpyoung/awesome-unity-free` (206★, MIT), `jeffreylanters/awesome-unity-packages` (53★).
@@ -119,6 +147,18 @@
 ### J–L. Paradigm experiments
 `openclaw-graph` (graph-native, Neo4j) proves skills can be *data*; `marcosotomac/unity-ai` proposes the **observe → act → verify** control loop; `skillissue/unity-quest-build` shows a *single high-value specialized* skill (build/simulate/profile/sideload/verify Quest). **Lesson adopted:** observe→act→verify as the canonical loop; a graduated "Quest build/verify" workflow.
 
+### M. skillsdirectory.com → Claude Dev Suite — *one skill, one file, no repository*
+
+**What it is.** A single XR skill of about 4.2 KB published on a skills directory site, with one `SKILL.md` and no repository behind it.
+
+**What was read.** The whole skill, once. It is the smallest source reviewed.
+
+**What was taken.** The XR naming landscape, read to confirm the dialect: the same `unity-xr` name that two other packs use, and the same interaction vocabulary. It confirmed that a naming collision is an ecosystem fact and not a quirk of one repository.
+
+**What was rejected.** A single-file skill scope. One file that owns a whole domain cannot carry a decision tree, a compatibility appendix, a failure triage table and a verification gate, and it gives the router nothing to point at.
+
+**Lesson adopted.** A domain needs a skill *and* a workflow and a reference, or it is a note. A source with no licence statement is read and never reproduced.
+
 ---
 
 ## 3. Cross-cutting format analysis
@@ -165,7 +205,7 @@
 | C3 | **Resources vs Addressables.** Julian `unity-addressables` (migrate off `Resources.Load`) vs numerous code samples across packs using `Resources.Load`/`FindObjectOfType` in `Start`. | H vs samples | High | ADR-0001: Addressables is the default; `Resources` allowed only for tiny immutable bootstrap data, with an explicit note. |
 | C4 | **Singleton vs DI.** Tozan ships a "safe singleton" skill; Nice Wolf `unity-game-architecture` frames Service Locator vs DI and treats singletons as an anti-pattern in large projects. | I vs C | Medium | ADR-0002: interfaces + composition; singleton only for genuinely single-instance services with explicit lifetime; never global mutable state. |
 | C5 | **Coroutine vs Awaitable vs UniTask.** Nice Wolf `unity-async-patterns` (Awaitable, double-await gotcha, cancellation) vs coroutine-based templates elsewhere vs Besty `unitask-design`. | C vs D | High | ADR-0003: `Awaitable` default on Unity 6; coroutines for frame-spread editor/simple work; UniTask only if already a dependency. |
-| C6 | **Locomotion default.** Generic XR guides default to smooth/continuous locomotion; Unity/Meta comfort guidance and Nice Wolf demand comfort options and teleport. | D/N vs C/F | High | Hard rule: teleport + snap-turn + vignette default; smooth motion is opt-in. |
+| C6 | **Locomotion default.** Generic XR guides default to smooth/continuous locomotion; Unity/Meta comfort guidance and Nice Wolf demand comfort options and teleport. | D/N vs C/F | High | Hard rule: the comfort default is decided once in ADR-0006; this register records the conflict, not the values. |
 | C7 | **XRI version dialect.** Besty0728's `xr` module supports XRI **2.x (Unity 2022) and 3.x**; Nice Wolf targets **XRI 3.x / Unity 6**; Unity examples target latest. API/property names differ (`XRBaseInteractor` vs `NearFarInteractor`; `interactionLayers` vs `InteractionLayerMask`). | D vs C/A | High | Pin one primary dialect (Unity 6 / XRI 3.x) and provide a single compatibility table; no duplicated, divergent examples. |
 | C8 | **Same skill names, different content.** `unity-2d`, `unity-dots`, `unity-audio`, `unity-multiplayer`, `unity-save`, `unity-test`, `unity-animation`, `unity-editor-tools`, `unity-performance`, `unity-xr` exist in **both** Nice Wolf and JulianKerignard (e.g. `unity-xr` also in openclaw-graph and skillsdirectory). | C vs H vs J vs M | **Critical** | Our namespace is unique (`loom-*`) and we define a **routing precedence** so co-installed packs cannot hijack our domains. |
 | C9 | **Latest vs pinned.** Unity's own CLI skill says *always use the latest Unity CLI*; Meta/Unity plugin issues show CLI/SDK **drift** breaking users. | A vs B/F | Medium | ADR-0004: pin Unity + package versions; use the latest *CLI*; record versions in a build manifest. |
@@ -177,7 +217,7 @@
 
 ## 6. Issue-derived failure taxonomy (what users actually hit)
 
-Mined from issue trackers of A–G plus the official samples. Counts are qualitative (volume of issues per cluster).
+Mined from issue trackers of A–G plus the official samples. Counts are qualitative (volume of issues per cluster). F1 to F15 are issue-derived; F16 to F18 are internal governance failures that no upstream reports but that this repository's own tooling could still suffer, and they are tracked here for the same reason. F19 to F22 come from the collaboration and quality doctrine, and are catalogued in [docs/04-failure-modes.md](04-failure-modes.md).
 
 | ID | Failure cluster | Representative issues | Root cause | Design answer (in our repo) |
 |---|---|---|---|---|
@@ -196,6 +236,9 @@ Mined from issue trackers of A–G plus the official samples. Counts are qualita
 | F13 | **XR interaction bugs** (from samples/frameworks) | XRI `#26` destroy-interactable exception, `#29` manual release, `#19/#51` ForceSelect internal, `#30` jittery hands, `#21` edge grab, `#107` two-hand wheel, `#14` AR raycast blocked by GUI; UltimateXR `#32/#50` input lost after resume, `#80` Meta SDK 74 broke controllers, `#65` Quest 3 hand tracking, `#10` Mixamo, `#48` XRI support | Interaction lifecycle, device/SDK churn, avatar rigs | XR skill ships an **interaction lifecycle contract** (select/exit/destroy/release), a **resume/regain-input procedure**, and **device-SDK compatibility gates** |
 | F14 | **AR session/visual failures** | ARF `#2` black screen (92 comments), `#988` iOS jitter with MT rendering, `#119/#165` reference-image library generation, `#586` image tracking stops updating, `#94` scene-switch crash, `#979` occlusion depth limit, `#1151` Xcode build failure | Rig/session setup, platform quirks | AR workflow ships a **deterministic setup checklist + failure triage table** for black screen, jitter, image libraries, occlusion, build |
 | F15 | **Verification/harness paradoxes** | `Nice Wolf #14–#19, #29, #33, #34–#43` | Over-engineered permission/grader hooks | Keep verification *observable and simple*: logs + tests + screenshots; no hidden hook theatre |
+| F16 | **Secret leakage** — a token, key or service-account file lands in the repository, in a CI log, or in a generated report, and the agent echoes it back | no upstream issue; the class of accident is in every pack | No blocking scan, and findings that print the value | **Blocking secret scan** over every tracked file, with the finding reported **redacted**, a documented marker for placeholders, and credentials read from the environment rather than from a file |
+| F17 | **Routing drift and trigger collisions** — two skills advertise the same trigger, or the manifest and the router table disagree, so a request routes to the wrong skill or to two | no upstream issue; the upstream packs collide on ten skill names (C8) | The trigger vocabulary is copied by hand into several places | **One trigger vocabulary** written once and materialised in three places (manifest, frontmatter, router table), compared byte-for-byte by the validator, with domain triggers disjoint and lowercase |
+| F18 | **The checker rots** — a rule silently stops being enforced while the build still reports green | no upstream issue; the risk of every "we have a linter" claim | A linter that is never itself tested | **The validator self-tests**: synthetic bad input must trip each rule and a good input must trip none, and the table runs in CI on every push |
 
 **The five highest-leverage fixes** (drive the product): **F2** freshness, **F1/F3** transport & setup, **F5** context budget, **F6/F7/F8** skill correctness & executability, **F9/F10** non-invasiveness. XR-specific (F13/F14) drives the domain content.
 
@@ -233,7 +276,7 @@ Mined from issue trackers of A–G plus the official samples. Counts are qualita
 
 ## 8. Reference ledger (how we cite everything upstream)
 
-Every upstream is recorded once, in `docs/ATTRIBUTION.md` and `references/upstream.md`, with: repo URL, license, what we took (idea, not text), and what we explicitly rejected. Non-negotiable rules:
+Every upstream is recorded once, in `docs/05-attribution.md` and `references/upstream.md`, with: repo URL, license, what we took (idea, not text), and what we explicitly rejected. Non-negotiable rules:
 
 1. **Ideas, not text.** No paragraph is copied; all wording is re-derived. Where an upstream phrase is uniquely load-bearing (e.g. a `hz-quest-verify-first` pre-flight concept), we describe it in our own words and link.
 2. **License awareness.** MIT/Apache/CC0/Unlicense upstreams are safe to *learn from*; `NOASSERTION` (most Unity-Technologies repos) and **GPL-3.0** (`michidk/Unity-Script-Collection`) are flagged and never copied; Unity repos are used only as *documentation references*.

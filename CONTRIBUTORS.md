@@ -12,7 +12,7 @@ the roster is never an unreviewed write to `main`.
 <!-- BEGIN CONTRIBUTORS -->
 | Contributor | Contributions |
 |---|---|
-| [@SparshKanodia](https://github.com/SparshKanodia) | 12 |
+| [@SparshKanodia](https://github.com/SparshKanodia) | 4 |
 <!-- END CONTRIBUTORS -->
 
 **Maintainer:** [@SparshKanodia](https://github.com/SparshKanodia) — the

@@ -64,7 +64,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@f051dc808ef3645eb0d08647ec751634ec2304ac # v4
         with:
-          language: ${{ matrix.language }}
+          # v4 takes a comma-separated `languages` list rather than a single
+          # `language`. The matrix runs one language per job, so the value is
+          # the single language of that job.
+          languages: ${{ matrix.language }}
           # The extended suite costs a few extra minutes and finds the
           # injection and path-traversal patterns that the default suite
           # leaves out.

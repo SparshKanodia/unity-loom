@@ -23,11 +23,7 @@ Two adapters can be present at once (a bridge *and* a device). Report the tier p
 
 **Worked example — run the EditMode tests.**
 
-1. PROBE   unity --version                      -> 6000.3.x, editor running on <project>
-2. ACT     unity test --mode editmode           -> test run starts
-3. READ-BACK re-read the reported pass/fail counts and the failed test names
-4. EVIDENCE the run summary (counts + failure list) is the proof
-```
+```text
 1. PROBE   unity --version                      -> 6000.3.x, editor running on <project>
 2. ACT     unity test --mode editmode           -> test run starts
 3. READ-BACK re-read the reported pass/fail counts and the failed test names

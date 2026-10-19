@@ -26,13 +26,13 @@ Precondition: [foundation](foundation.md) is done and the pipeline is chosen.
 - [ ] Choose the pipeline from the defaults table; write the decision,
       the reason and the date into `docs/graphics-decision.md`.
 - [ ] Create the pipeline asset from an editor script that instantiates
-      the pipeline asset type and saves it under `Assets/Settings/`.
+      the pipeline asset type and saves it under `Assets/Settings/` (C-078).
 - [ ] Assign that asset in the custom render pipeline field of
       `ProjectSettings/GraphicsSettings.asset` and in every quality level
       of `ProjectSettings/QualitySettings.asset`.
 - [ ] Create one quality level per platform tier; set render scale,
-      anti-aliasing, shadow distance, shadow count and texture quality
-      on each level.
+      anti-aliasing, shadow distance (C-184), shadow count and texture
+      quality on each level.
 - [ ] Implement each renderer feature as a code subclass and register it
       in the renderer asset with a serialized-object editor script.
 - [ ] Add the pipeline packages to `Packages/manifest.json` and commit

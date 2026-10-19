@@ -10,21 +10,23 @@ Unity Loom is a small, governed, *markdown-first* repository for building Unity 
 
 ## 60-second install
 
+From a clone — the path that works right now, for any harness:
+
+```bash
+node tools/install.mjs plan    --target agents      # show what will be installed, and where
+node tools/install.mjs install --target agents      # copy the 10 skills into ~/.agents/skills
+node tools/install.mjs verify  --target agents      # prove the installed copy matches the repo
+```
+
+`--target` accepts `claude`, `agents`, `cursor`, `project`, or any directory with `--dest <dir>`. The catalogue is read from `manifest.json`, so no per-client file can drift, and `verify` fails loudly if an installed copy has gone stale.
+
+Once the repository is published under an organisation, the ecosystem installers work too — substitute your org:
+
 ```bash
 npx skills add <org>/unity-loom                      # all skills
 npx skills add <org>/unity-loom --skill unity-loom   # router only (recommended start)
 gh skill install <org>/unity-loom unity-loom --agent codex --scope user
 ```
-
-From a clone, the built-in installer does the same for any harness, from one catalogue:
-
-```bash
-node tools/install.mjs plan    --target agents      # show what will be installed, where
-node tools/install.mjs install --target agents      # copy the 10 skills into ~/.agents/skills
-node tools/install.mjs verify  --target agents      # prove the installed copy matches the repo
-```
-
-`--target` accepts `claude`, `agents`, `cursor`, `project`, or any directory with `--dest <dir>`. The catalogue is read from `manifest.json`, so no per-client file can drift.
 
 ## 5-minute first task
 
@@ -62,7 +64,7 @@ Read in this order: [`docs/00-repository-synthesis.md`](docs/00-repository-synth
 - **One fact, one place.** Doctrine and references own the truth; skills link, never restate.
 - **Router owns discovery.** Domain triggers are disjoint and machine-checked against the manifest *and* each skill's frontmatter — no skill can hijack another.
 - **Precedence lattice.** Every disagreement (Resources vs Addressables, singleton vs DI, coroutine vs Awaitable, XRI dialects, locomotion defaults) is decided once in [`docs/03-decision-records.md`](docs/03-decision-records.md).
-- **Hard budgets.** Per-file line/byte caps, ≤ 12 skills, ≤ 10 workflows, ≤ 64 KB of skill frontmatter+body, zero orphans — enforced by CI.
+- **Hard budgets.** Per-file line/byte caps, a skill count and a workflow count that can only grow by replacing something, zero orphans — enforced by CI. The budgets are guards against fluff and duplication, not quotas: substance raises the cap, fluff is removed ([docs/06-context-budget.md](docs/06-context-budget.md)).
 - **Zero-requirement core.** Unity CLI, MCP, UCP and `metavr` are optional tiers, never dependencies.
 - **Secrets are a build failure.** Credential-shaped material in any tracked file fails the validator, redacted.
 

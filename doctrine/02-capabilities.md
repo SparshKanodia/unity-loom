@@ -1,6 +1,6 @@
 # Doctrine 02 — Capabilities & Adapters
 
-The core needs **nothing but a text editor**. Other capabilities are optional tiers, *detected*, never assumed. See [references/adapters.md](../references/adapters.md).
+The core needs **nothing but a text editor**. Other capabilities are optional tiers, *detected*, never assumed. See `references/adapters.md`.
 
 ## 1. Tiers
 
@@ -32,10 +32,10 @@ Never guess a tier. A probe that errors, parses to nothing, or times out is **ab
 
 - Probe each tier **at most twice**: now, then once after a backoff (≈2 s).
 - Never loop, never poll, never re-probe a tier that answered.
-- A failed probe is a **downgrade**, not a failure. Continue one tier down.
-- Probe in descending order; the first success ends the search.
-- Keep the raw probe output; it is the evidence for the tier claimed.
-- Re-probing a known-absent tier is waste; the absence is established.
+- A failed probe is a **downgrade**, not a failure. Go one tier down.
+- Probe in descending order; the first success ends it.
+- Keep the raw probe output; it is the evidence for the tier.
+- Re-probing a known-absent tier is waste; absence is established.
 
 ## 4. Adapter contract
 
@@ -46,7 +46,7 @@ Each adapter clears four testable questions before it is trusted.
 | 1 | Is it alive? | health call returns ok plus the target id (project path, device id) |
 | 2 | Which versions? | tool and project versions reported; a bad pair stops it |
 | 3 | Is it repeatable? | the action maps to a class (§5) that allows a retry |
-| 4 | How is it proven? | a read-back of the changed property returns the intended value |
+| 4 | How is it proven? | a read-back of the property returns the intended value |
 
 A bridge that names another project or device answers *no*.
 
@@ -55,8 +55,8 @@ A bridge that names another project or device answers *no*.
 | Class | Examples | Repeat rule |
 |---|---|---|
 | READ | list, query, read a value | always safe to repeat |
-| CREATE | add an object, write a new asset, create a scene | repeat only after a read-back shows it did not happen |
-| MUTATE | set a property, move, reparent, import | repeat only if it is itself idempotent; else read, decide |
+| CREATE | add an object, write an asset, create a scene | repeat only after a read-back shows it did not happen |
+| MUTATE | set a property, move, reparent, import | repeat only if idempotent; else read, decide |
 | DESTRUCTIVE | delete, clean, reset, uninstall, deploy | never repeat; read state for the outcome |
 
 Classify before you act. An unclassified action counts as DESTRUCTIVE.
@@ -76,7 +76,7 @@ A downgrade changes the proof you can offer; name the proof given up.
 
 ## 7. Recording the tier
 
-State it once, up front, so the user knows the verification quality.
+State it once up front, so the user knows the verification quality.
 
 ```text
 Operating at T2 (live-editor: Unity MCP, project <path>, Unity 6000.3.12f1)
@@ -89,11 +89,10 @@ Fallback if the editor closes: T1 (unity CLI present)
 - A missing tier changes the *method*, never the goal.
 - If the fallback is missing too, emit a `HUMAN HANDOFF` with the command.
 - Never install a tool to raise your tier. Tiers are given, not made.
-- Report the downgrade, with the evidence quality it costs.
-- A downgrade is not a licence to guess: the missing proof stays missing.
+- Report the downgrade and the evidence quality it costs; a downgrade is not a licence to guess.
 - No tier claim without the probe output that supports it.
 - A version claim needs a source in `references/claims.md`.
-- A tier is a *means*, not a goal: pick the lowest tier that suffices.
-- Live editor state needs T2; T1 and T0 substitute a build or diff.
-- Device truth needs T3; below it the answer is a model, not a fact.
+- A tier is a *means*, not a goal: pick the lowest that suffices.
+- Live editor state needs T2; T1 and T0 substitute a build.
+- Device truth needs T3; below it the answer is a model, not fact.
 - Report the tier with the answer, not before it.

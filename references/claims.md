@@ -171,6 +171,24 @@ Test framework and editor-side build facts.
 | C-099 | `BuildPipeline.BuildPlayer` builds a player programmatically | docs.unity3d.com/6000.3/Documentation/ScriptReference/BuildPipeline.BuildPlayer | Unity 6000.3 |
 | C-100 | Mono is JIT; IL2CPP is Unity's AOT pipeline converting IL to C++ | docs.unity3d.com/6000.3/Documentation/Manual/scripting-backends | Unity 6000.3 |
 
+## Editor and tooling
+
+Editor state, editor API and CLI session facts.
+
+| ID | Claim | Source | Verified against |
+|---|---|---|---|
+| C-186 | `EditorApplication.isCompiling` reports whether the Editor is compiling scripts | docs.unity3d.com/6000.3/Documentation/ScriptReference/EditorApplication-isCompiling | Unity 6000.3 |
+| C-187 | `EditorApplication.isUpdating` is true while the Editor is refreshing the AssetDatabase | docs.unity3d.com/6000.3/Documentation/ScriptReference/EditorApplication-isUpdating | Unity 6000.3 |
+| C-188 | `EditorApplication.isPlaying` reports whether the Editor is in Play mode | docs.unity3d.com/6000.3/Documentation/ScriptReference/EditorApplication-isPlaying | Unity 6000.3 |
+| C-189 | `EditorApplication.isPlayingOrWillChangePlaymode` is true in Play mode or just before entering it, and false when the Editor will exit | docs.unity3d.com/6000.3/Documentation/ScriptReference/EditorApplication-isPlayingOrWillChangePlaymode | Unity 6000.3 |
+| C-190 | `EditorUtility.IsDirty` reports whether an object has changed since it was last saved | docs.unity3d.com/6000.3/Documentation/ScriptReference/EditorUtility.IsDirty | Unity 6000.3 |
+| C-191 | `Scene.isDirty` returns true when the Scene is modified | docs.unity3d.com/6000.3/Documentation/ScriptReference/SceneManagement.Scene | Unity 6000.3 |
+| C-192 | `AssetDatabase.GlobalArtifactDependencyVersion` changes during a refresh that invalidates artifacts; an unchanged value means the artifacts are still valid | docs.unity3d.com/6000.3/Documentation/ScriptReference/AssetDatabase.GlobalArtifactDependencyVersion | Unity 6000.3 |
+| C-193 | `AssemblyReloadEvents.afterAssemblyReload` is dispatched just after Unity has reloaded all assemblies | docs.unity3d.com/6000.3/Documentation/ScriptReference/AssemblyReloadEvents-afterAssemblyReload | Unity 6000.3 |
+| C-194 | `SceneManager.GetActiveScene` gets the currently active Scene | docs.unity3d.com/6000.3/Documentation/ScriptReference/SceneManagement.SceneManager.GetActiveScene | Unity 6000.3 |
+| C-195 | `EditorSceneManager` extends `SceneManager` and exposes the loaded scenes through `GetSceneManagerSetup`, `GetSceneAt` and `GetSceneByPath` | docs.unity3d.com/6000.3/Documentation/ScriptReference/SceneManagement.EditorSceneManager | Unity 6000.3 |
+| C-196 | The Unity CLI `status` command shows the live state of connected Editors: port, project path, version and process ID | docs.unity.com/en-us/unity-cli/unity-cli-reference | Unity CLI |
+
 ## Build, release & security
 
 Build, release and platform-security facts.

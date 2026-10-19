@@ -26,15 +26,16 @@ Read these before acting. Use whatever your bridge exposes; the middle column li
 
 | What to read | Editor API | CLI equivalent |
 |---|---|---|
-| Open scene | `SceneManager.GetActiveScene()` plus the editor scene list | bridge scene query |
-| Unsaved changes | scene `isDirty`, `EditorUtility.IsDirty` on the asset | read-back shows a saved path |
-| Compiling | `EditorApplication.isCompiling`, `isUpdating` | build/test log compile markers |
+| Editor session | `unity status` reports port, project path, version and process ID (C-196) | bridge session query |
+| Open scene | `SceneManager.GetActiveScene()` (C-194) plus the editor scene list (C-195) | bridge scene query |
+| Unsaved changes | scene `isDirty` (C-191), `EditorUtility.IsDirty` on the asset (C-190) | read-back shows a saved path |
+| Compiling | `EditorApplication.isCompiling` (C-186), `isUpdating` (C-187) | build/test log compile markers |
 | Compile errors | console error entries for the project | log lines tagged as compile errors |
-| Asset database | `AssetDatabase` refresh/import state plus its version counter | import pending flag |
-| Play mode | `EditorApplication.isPlaying`, `isPlayingOrWillChangePlaymode` | bridge play-mode query |
-| Domain reload | a reload counter the bridge exposes; a rising counter means a reload ran | bridge reload counter |
+| Asset database | `AssetDatabase` refresh/import state, plus `GlobalArtifactDependencyVersion` as the version counter (C-192) | import pending flag |
+| Play mode | `EditorApplication.isPlaying` (C-188), `isPlayingOrWillChangePlaymode` (C-189) | bridge play-mode query |
+| Domain reload | a reload counter the bridge exposes; `AssemblyReloadEvents.afterAssemblyReload` fires per reload (C-193) | bridge reload counter |
 
-Names are the common members; confirm them against `references/claims.md` for your pinned version.
+The members and their versions are registered in `references/claims.md`; confirm the id before you rely on it.
 
 ## 3. Never act while
 

@@ -1,0 +1,113 @@
+name: Skill proposal (RFC)
+description: Propose a new skill for Unity Loom, with the four requirements a skill has to meet.
+title: "[RFC]: "
+labels:
+  - enhancement
+  - proposal
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A skill proposal is a request for a decision, not a pull request yet.
+        It answers the four questions the repository asks of every new skill,
+        so the reviewer can rule on the idea before anyone writes the code.
+
+        The four requirements, from
+        [docs/06-context-budget.md](../docs/06-context-budget.md) §8:
+
+        1. **A real workflow.** A skill without a procedure is a paragraph,
+           and a paragraph belongs in `references/`.
+        2. **A verification gate.** The workflow ends in observable evidence:
+           a log line, a test result, a build, a read-back.
+        3. **Disjoint triggers.** No phrase in the trigger set may already
+           belong to another skill. The validator checks this.
+        4. **A substitution.** The proposal names the existing skill it
+           replaces or merges with. Growth happens by substitution, not by
+           addition.
+
+        If one of the four cannot be met, the answer is a reference, and that
+        is a successful outcome rather than a rejection (ADR-0015).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What an agent cannot do today, and the request that shows it. Describe the failing task, not the proposed file.
+      placeholder: An agent cannot tell, from a Profiler capture alone, which change would fix the frame time, so it guesses and changes three things at once.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: The workflow it owns
+      description: The procedure that would run, its phases, and the gate each phase clears. Name the file it would live in.
+      placeholder: workflows/performance.md, with a gate of a p95 frame time under 16.6 ms on a device capture.
+    validations:
+      required: true
+
+  - type: textarea
+    id: gate
+    attributes:
+      label: The verification gate
+      description: The observable that proves the work is done. Not "it compiles".
+      placeholder: The device capture reports p95 below 16.6 ms, and the capture file is attached to the pull request.
+    validations:
+      required: true
+
+  - type: textarea
+    id: triggers
+    attributes:
+      label: The trigger set
+      description: The phrases that would route to this skill, comma separated. Each one must be unused by every existing skill. The router table in skills/unity-loom/SKILL.md carries the same list.
+      placeholder: frame budget, device capture, thermal throttling
+    validations:
+      required: true
+
+  - type: textarea
+    id: replaced
+    attributes:
+      label: What it replaces or merges with
+      description: The existing skill, workflow or reference this replaces, merges into, or leaves untouched. This is the growth protocol question.
+      placeholder: It merges into loom-performance, so the trigger set stays disjoint and the skill count does not grow.
+    validations:
+      required: true
+
+  - type: textarea
+    id: budget
+    attributes:
+      label: The budget statement
+      description: The expected size of the skill and the workflow in lines and bytes, and the cap they sit under. The cap moves to fit substance; it never pushes substance out.
+      placeholder: 210 lines and 9,400 bytes for the skill, against a cap of 340 lines and 16,000 bytes; 260 lines and 13,000 bytes for the workflow, against 520 and 28,000.
+    validations:
+      required: true
+
+  - type: textarea
+    id: claims
+    attributes:
+      label: The claims it needs
+      description: The version-specific facts the skill would rely on, and where each one would be verified. A claim without a source and a version does not go in the skill.
+      placeholder: The RenderGraph recorder API changed in 6000.0; the row would carry a source and a verified-against version.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Why not an existing skill
+      description: What happens if this is folded into a skill that already exists, and what that costs. If the answer is "nothing is lost", say why the new skill is still better.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The proposal names a real workflow, not just prose
+        - label: The workflow ends in an observable verification gate
+        - label: The trigger set is disjoint from every existing skill
+        - label: The proposal names an existing skill it replaces or merges with
+        - label: The budget statement is included
+    validations:
+      required: true

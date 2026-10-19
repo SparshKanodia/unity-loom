@@ -99,6 +99,22 @@ Six mechanisms, each machine-checked.
 | A zero-requirement core | A missing Unity CLI, editor bridge or device is a downgrade with a named fallback, never an error. Tiers run from T0 file-edit to T3 device, and the agent states the tier it is working at. | [doctrine/02-capabilities.md](doctrine/02-capabilities.md), [references/adapters.md](references/adapters.md) |
 | Credential material is a build failure | The scan covers every tracked file, and a finding is reported redacted. | ADR-0014 |
 
+The repository is protected as a supply chain as well: `main` accepts pull
+requests only, one code-owner approval and four required checks, the
+administrator included; every CI action is pinned to a commit SHA; no secret
+is reachable from a pull-request run; CodeQL analyses the tooling and the
+workflows; and each release carries a build-provenance attestation. The
+threat model is in [docs/09-security-model.md](docs/09-security-model.md) and
+the reporting channel in [SECURITY.md](SECURITY.md).
+
+## What comes next
+
+The corpus covers the decisions. The next phase covers the assets: MCP
+integrations for voice, 3D, image and sound generation, so one request can
+produce a finished, imported and verified asset instead of a plan for one.
+The plan is in [docs/08-mcp-integration-plan.md](docs/08-mcp-integration-plan.md)
+and the phases are in [ROADMAP.md](ROADMAP.md).
+
 ## Install
 
 Node 20 or later. The installer has zero dependencies, makes no network call,
@@ -253,6 +269,11 @@ obeys.
 | [HARNESSES.md](HARNESSES.md) | The install matrix for every harness, with gotchas and troubleshooting. |
 | [AGENTS.md](AGENTS.md) | The contract the agent obeys, and [GUIDE.md](GUIDE.md) the path through it. |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | The rules a change must satisfy, and the growth protocol. |
+| [CONTRIBUTORS.md](CONTRIBUTORS.md) | Who built it, and how to be listed. |
+| [SECURITY.md](SECURITY.md) | How to report a vulnerability, and the controls that protect the repository. |
+| [ROADMAP.md](ROADMAP.md) | What the project is building next, and what it will not build. |
+| [docs/08-mcp-integration-plan.md](docs/08-mcp-integration-plan.md) | The plan for the generation layer: voice, 3D, image and sound providers. |
+| [docs/09-security-model.md](docs/09-security-model.md) | The threat model, and the expected state of the repository settings. |
 
 ## Validation and CI
 
@@ -272,6 +293,14 @@ CI runs the self-test and the validator on Linux, macOS and Windows against
 Node 20, 22 and 24, and it runs the installer end to end. The pipeline is
 [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
+The repository is also defended as a supply chain: every action is pinned to
+a full commit SHA, no secret is reachable from a pull-request run, CodeQL
+analyses the tooling and the workflow files, Dependabot proposes the action
+bumps as reviewable pull requests, and each release archive carries a
+build-provenance attestation. The threat model is in
+[docs/09-security-model.md](docs/09-security-model.md), and the private
+reporting channel is in [SECURITY.md](SECURITY.md).
+
 ## Contributing
 
 A new skill needs four things: a real workflow, a verification gate, triggers
@@ -279,6 +308,12 @@ disjoint from every other skill, and a statement of which existing skill it
 replaces or merges. Content that does not need a procedure belongs in
 `references/`. The rules and the growth protocol are in
 [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Proposals start as an issue, using the skill proposal form in
+`.github/ISSUE_TEMPLATE`. Commits are signed off under the DCO, behaviour
+expectations are in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and the roster
+is in [CONTRIBUTORS.md](CONTRIBUTORS.md). What the project intends to build
+next is in [ROADMAP.md](ROADMAP.md).
 
 ## Licence and attribution
 
@@ -296,7 +331,8 @@ single idea taken from it and the part rejected, in
 - The claim registry is verified against Unity 6000.3. A project on another
   version must re-verify the claims it relies on.
 - This repository does not run Unity, and it does not author art, audio or
-  shaders for a project.
+  shaders for a project. The generation layer that will do that is planned in
+  [ROADMAP.md](ROADMAP.md) and [docs/08-mcp-integration-plan.md](docs/08-mcp-integration-plan.md).
 - It does not replace a human design decision. It routes, checks and proves.
 - Editor-only steps — reading the frame debugger, watching the Profiler
   window — need a human, and the repository says so in a `HUMAN HANDOFF`

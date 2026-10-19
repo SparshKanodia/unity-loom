@@ -141,9 +141,11 @@
     { "path": "docs/04-failure-modes.md" },
     { "path": "docs/05-attribution.md" },
     { "path": "docs/06-context-budget.md" },
-    { "path": "docs/07-workflow-template.md" }
+    { "path": "docs/07-workflow-template.md" },
+    { "path": "docs/08-mcp-integration-plan.md" },
+    { "path": "docs/09-security-model.md" }
   ],
-  "rootFiles": ["README.md", "AGENTS.md", "GUIDE.md", "HARNESSES.md", "CONTRIBUTING.md", "manifest.json", "LICENSE"],
+  "rootFiles": ["README.md", "AGENTS.md", "GUIDE.md", "HARNESSES.md", "CONTRIBUTING.md", "CONTRIBUTORS.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "ROADMAP.md", "manifest.json", "LICENSE"],
   "tooling": ["tools/validate.mjs", "tools/install.mjs", "tools/perf-budget.mjs", "tools/README.md"],
   "adapters": [
     { "tier": "T0", "name": "file-edit", "requires": "none" },

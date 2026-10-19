@@ -1,0 +1,18 @@
+# Unity Loom — line-ending policy (fixes F11: CRLF/LF budget drift)
+* text=auto eol=lf
+
+*.md   text eol=lf
+*.mjs  text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.txt  text eol=lf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary

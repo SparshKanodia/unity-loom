@@ -1,0 +1,165 @@
+{
+  "name": "unity-loom",
+  "version": "1.0.0",
+  "entry": "skills/unity-loom/SKILL.md",
+  "description": "One fabric for Unity agent skills, workflows, and engineering doctrine.",
+  "spec": "agent-skills",
+  "budgets": {
+    "router": { "lines": 120, "bytes": 6000 },
+    "skill": { "lines": 320, "bytes": 14000 },
+    "workflow": { "lines": 480, "bytes": 24000 },
+    "doctrine": { "lines": 140, "bytes": 6000 },
+    "reference": { "lines": 420, "bytes": 32000 },
+    "totalCoreBytes": 120000,
+    "maxSkills": 12,
+    "maxWorkflows": 10,
+    "maxReferences": 8
+  },
+  "routerOnlyTriggers": [
+    "unity", "my game", "the project", "unity editor", "scene", "prefab",
+    "gameobject", "component", "unity version", "help with unity", "build my unity app"
+  ],
+  "bannedTriggers": ["ar", "vr", "mr"],
+  "skills": [
+    {
+      "name": "unity-loom",
+      "path": "skills/unity-loom/SKILL.md",
+      "domain": "router",
+      "tier": 0,
+      "workflow": null,
+      "triggers": []
+    },
+    {
+      "name": "loom-project",
+      "path": "skills/loom-project/SKILL.md",
+      "domain": "project",
+      "tier": 1,
+      "workflow": "workflows/foundation.md",
+      "triggers": ["architecture", "asmdef", "assembly definition", "scriptableobject", "save system", "dependency injection", "service locator", "event bus", "state machine", "fsm", "netcode", "multiplayer", "project setup", "folder structure", "version control", "git", "upm package", "package manager", "scene management", "addressables"]
+    },
+    {
+      "name": "loom-2d",
+      "path": "skills/loom-2d/SKILL.md",
+      "domain": "2d",
+      "tier": 2,
+      "workflow": "workflows/2d.md",
+      "triggers": ["2d", "sprite", "sprite atlas", "tilemap", "rule tile", "pixel perfect", "light2d", "collider2d", "rigidbody2d", "2d physics"]
+    },
+    {
+      "name": "loom-3d",
+      "path": "skills/loom-3d/SKILL.md",
+      "domain": "3d",
+      "tier": 3,
+      "workflow": "workflows/3d.md",
+      "triggers": ["3d", "navmesh", "character controller", "rigidbody", "collider", "terrain", "probuilder", "cinemachine", "lod", "occlusion culling", "animation rigging", "timeline", "level design"]
+    },
+    {
+      "name": "loom-graphics",
+      "path": "skills/loom-graphics/SKILL.md",
+      "domain": "graphics",
+      "tier": 4,
+      "workflow": "workflows/graphics.md",
+      "triggers": ["urp", "hdrp", "render pipeline", "shader", "shader graph", "hlsl", "lighting", "lightmap", "reflection probe", "post processing", "vfx graph", "particle system", "batching", "gpu instancing", "decal", "skybox"]
+    },
+    {
+      "name": "loom-ui-audio",
+      "path": "skills/loom-ui-audio/SKILL.md",
+      "domain": "ui-audio",
+      "tier": 5,
+      "workflow": "workflows/ui-audio.md",
+      "triggers": ["ui toolkit", "uxml", "uss", "ugui", "canvas", "textmeshpro", "tmp", "hud", "menu ui", "audio mixer", "sound", "sfx", "music", "spatial audio", "localization", "input system", "rebinding", "gamepad", "touch controls", "accessibility"]
+    },
+    {
+      "name": "loom-xr",
+      "path": "skills/loom-xr/SKILL.md",
+      "domain": "xr",
+      "tier": 6,
+      "workflow": "workflows/xr.md",
+      "triggers": ["xr", "virtual reality", "augmented reality", "mixed reality", "arfoundation", "xri", "openxr", "quest", "meta xr", "visionos", "polyspatial", "hand tracking", "passthrough", "spatial anchor", "plane detection", "teleport", "comfort", "haptics", "mruk", "spatial computing", "webxr", "hololens", "pico", "steamvr"]
+    },
+    {
+      "name": "loom-simulation",
+      "path": "skills/loom-simulation/SKILL.md",
+      "domain": "simulation",
+      "tier": 7,
+      "workflow": "workflows/simulation.md",
+      "triggers": ["simulation", "training", "procedure", "assessment", "xapi", "scorm", "digital twin", "instructional design", "lms", "instructor", "cad import", "asset transformer"]
+    },
+    {
+      "name": "loom-performance",
+      "path": "skills/loom-performance/SKILL.md",
+      "domain": "performance",
+      "tier": 8,
+      "workflow": "workflows/performance.md",
+      "triggers": ["performance", "profiler", "optimize", "optimization", "memory", "gc allocation", "fps", "draw calls", "overdraw", "stutter", "thermal", "bottleneck", "frame debugger", "renderdoc", "memory leak"]
+    },
+    {
+      "name": "loom-release",
+      "path": "skills/loom-release/SKILL.md",
+      "domain": "release",
+      "tier": 9,
+      "workflow": "workflows/release.md",
+      "triggers": ["build", "build profile", "ci", "cd", "gameci", "il2cpp", "test", "unit test", "playmode", "editmode", "ship", "release", "store submission", "crash reporting", "security", "privacy", "obfuscation"]
+    }
+  ],
+  "workflows": [
+    { "name": "foundation", "path": "workflows/foundation.md", "domains": ["project"] },
+    { "name": "2d", "path": "workflows/2d.md", "domains": ["2d"] },
+    { "name": "3d", "path": "workflows/3d.md", "domains": ["3d"] },
+    { "name": "graphics", "path": "workflows/graphics.md", "domains": ["graphics"] },
+    { "name": "ui-audio", "path": "workflows/ui-audio.md", "domains": ["ui-audio"] },
+    { "name": "xr", "path": "workflows/xr.md", "domains": ["xr"] },
+    { "name": "simulation", "path": "workflows/simulation.md", "domains": ["simulation"] },
+    { "name": "performance", "path": "workflows/performance.md", "domains": ["performance", "2d", "3d", "graphics", "ui-audio", "xr"] },
+    { "name": "release", "path": "workflows/release.md", "domains": ["release", "project"] }
+  ],
+  "doctrine": [
+    { "path": "doctrine/00-precedence.md" },
+    { "path": "doctrine/01-safety.md" },
+    { "path": "doctrine/02-capabilities.md" },
+    { "path": "doctrine/03-state-freshness.md" },
+    { "path": "doctrine/04-responses.md" },
+    { "path": "doctrine/05-non-invasiveness.md" }
+  ],
+  "references": [
+    { "path": "references/claims.md" },
+    { "path": "references/xr-dialect.md" },
+    { "path": "references/anti-patterns.md" },
+    { "path": "references/adapters.md" },
+    { "path": "references/examples.md" },
+    { "path": "references/traceability.md" },
+    { "path": "references/upstream.md" }
+  ],
+  "docs": [
+    { "path": "docs/00-repository-synthesis.md" },
+    { "path": "docs/01-product-idea.md" },
+    { "path": "docs/02-build-plan.md" },
+    { "path": "docs/03-decision-records.md" },
+    { "path": "docs/04-failure-modes.md" },
+    { "path": "docs/05-attribution.md" },
+    { "path": "docs/06-context-budget.md" }
+  ],
+  "rootFiles": ["README.md", "AGENTS.md", "manifest.json", "LICENSE"],
+  "tooling": ["tools/validate.mjs", "tools/install.mjs", "tools/README.md"],
+  "adapters": [
+    { "tier": "T0", "name": "file-edit", "requires": "none" },
+    { "tier": "T1", "name": "unity-cli", "requires": "unity CLI" },
+    { "tier": "T2", "name": "live-editor", "requires": "Unity MCP or UCP bridge" },
+    { "tier": "T3", "name": "device", "requires": "metavr, adb, Xcode, or platform tooling" }
+  ],
+  "upstream": [
+    { "repo": "Unity-Technologies/skills", "license": "Unity Companion License", "took": "editor-driven workflow concept, skill granularity", "rejected": "vendoring" },    { "repo": "jack-arturo/skillissue", "license": "check upstream", "took": "graduated build and verify ship path", "rejected": "single-focus skill" },    { "repo": "Unity-Technologies/unity-agent-plugin", "license": "Unity Companion License", "took": "packaging concept", "rejected": "three drift-prone channels" },
+    { "repo": "Nice-Wolf-Studio/unity-claude-skills", "license": "MIT", "took": "correctness/architecture/design-intent tiering, XR topical coverage", "rejected": "GUI instructions, hook testbed" },
+    { "repo": "Besty0728/Unity-Skills", "license": "MIT", "took": "anti-hallucination guardrails, collider matrix, operating modes", "rejected": "reflection-only bridge, invasive editor hooks" },
+    { "repo": "mflRevan/unity-control-protocol", "license": "MIT", "took": "generated catalog, visual feedback, omni/surface split", "rejected": "hard CLI+bridge dependency" },
+    { "repo": "meta-quest/agentic-tools", "license": "Apache-2.0", "took": "verify-first pre-flight, MR/device tooling concepts", "rejected": "all-or-nothing setup" },
+    { "repo": "CoplayDev/unity-mcp", "license": "MIT", "took": "editor bridge tool surface, issue-derived failure modes", "rejected": "hard Python/uv dependency" },
+    { "repo": "JulianKerignard/Unity-Skills", "license": "MIT", "took": "decision trees, hard rules, prototype gradient", "rejected": "colliding unity-* names" },
+    { "repo": "MuharremTozan/unity-agent-skills", "license": "check upstream", "took": "pattern library organisation", "rejected": "pattern sprawl" },
+    { "repo": "alphaonedev/openclaw-graph", "license": "check upstream", "took": "skills-as-data idea", "rejected": "deprecated XR API examples" },
+    { "repo": "marcosotomac/unity-ai", "license": "check upstream", "took": "observe-act-verify loop", "rejected": "control-plane coupling" },
+    { "repo": "Unity-Technologies/arfoundation-samples", "license": "check upstream", "took": "AR feature reference scenes, issue-derived AR triage", "rejected": "vendoring" },
+    { "repo": "Unity-Technologies/XR-Interaction-Toolkit-Examples", "license": "check upstream", "took": "interaction lifecycle and sample-issue mitigations", "rejected": "vendoring" },
+    { "repo": "VRMADA/ultimatexr-unity", "license": "MIT", "took": "issue-derived XR failure modes", "rejected": "framework adoption" }
+  ]
+}

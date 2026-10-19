@@ -168,6 +168,7 @@ Claude Code / Codex / Grok plugin manifests are generated from `manifest.json` (
 | **P2 (in progress)** | Adapter guide (Unity CLI / editor bridge / device tooling) with a health-check, retry and read-back contract per adapter | Each adapter has a health check and an idempotent retry contract |
 | **P3** | Community: issue templates, skill-proposal RFC, quarterly version-review cadence | External contributions follow the same validator |
 | **P4 (only if justified)** | A single optional Unity helper package (namespaced, GUID-registry, opt-in) | Non-invasiveness + collision CI proven |
+| **P5 (planned)** | The generation layer: MCP providers for voice, 3D, image and sound, behind one skill and one workflow | One request produces a finished, imported, verified asset. The plan is in [docs/08-mcp-integration-plan.md](08-mcp-integration-plan.md) and the phases in [ROADMAP.md](../ROADMAP.md) |
 
 ## 11. Why not the alternatives
 

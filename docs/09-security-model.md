@@ -135,11 +135,11 @@ here. A value that differs from this table is drift.
 |---|---|
 | Secret scanning | Enabled |
 | Secret scanning push protection | Enabled |
-| Secret scanning validity checks | Enabled |
-| Secret scanning non-provider patterns | Enabled |
+| Secret scanning validity checks | Not available on this repository's plan; the API refuses to set it. The validator's own secret rule and gitleaks cover the same ground |
+| Secret scanning non-provider patterns | Not available on this repository's plan; the API refuses to set it. A custom pattern can be added to `gitleaks.toml` instead |
 | Dependabot alerts | Enabled |
 | Dependabot security updates | Enabled |
-| Code scanning (CodeQL) | Enabled |
+| Code scanning (CodeQL) | Available to public repositories; the workflow in `.github/workflows/codeql.yml` uploads the results |
 | Private vulnerability reporting | Enabled |
 | Merge commits | Disabled |
 | Rebase merges | Enabled |

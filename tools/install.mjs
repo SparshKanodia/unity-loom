@@ -39,14 +39,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
 
 // The shared corpus: directories and root files copied into D/loom-shared/.
-// The list is derived from manifest.json so the corpus can never drift from
-// the catalogue: a new root file or a new group is picked up automatically.
+// The root files are derived from manifest.json → rootFiles, so the corpus
+// can never drift from the catalogue: a new root file is picked up
+// automatically, and the installer's own link check proves that every link
+// in the installed copy still resolves.
 const SHARED_NAME = "loom-shared";
 const SHARED_DIRS = ["skills", "workflows", "doctrine", "references", "docs", ".github"];
-const SHARED_FILES = [
-  "AGENTS.md", "GUIDE.md", "HARNESSES.md", "CONTRIBUTING.md",
-  "manifest.json", "README.md", "LICENSE",
-];
 const SHARED_TOOLS = "tools";
 const EXCLUDE_DIRS = new Set([".git", "node_modules", "artifacts", "dist"]);
 const SKILL_FILENAME = "SKILL.md";
@@ -351,7 +349,7 @@ function sharedPlan() {
     if (!existsSync(abs)) continue;
     for (const rel of walkRel(abs)) plan.push({ rel: `${dir}/${rel}`, src: join(abs, rel) });
   }
-  for (const file of SHARED_FILES) {
+  for (const file of manifest.rootFiles || []) {
     const abs = join(ROOT, file);
     if (existsSync(abs)) plan.push({ rel: file, src: abs });
   }

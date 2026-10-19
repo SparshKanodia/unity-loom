@@ -325,57 +325,28 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Scan the git history (trusted run)
+      - name: Scan the git history
         # The action runs the gitleaks detector over the checked-out history
         # and fails the job on a finding. It is pinned to a commit digest.
         #
-        # The gitleaks action requires a licence for an organisation
-        # repository and does not require one for a personal repository. The
-        # licence secret is therefore read only where the code is trusted: a
-        # push to `main`, or a manual dispatch.
+        # gitleaks-action v3 takes no inputs: it always runs
+        # `gitleaks detect --redact`, so a finding is reported with the
+        # secret masked, and it scopes the scan to the event — the whole
+        # history on a push, the pull request's commits on a pull request.
         #
-        # The pull request case is the next step, and it uses no secret at
-        # all, because a pull request can rewrite the very files this
-        # workflow executes. The validator's own `secrets` rule also runs on
-        # every pull request through the `validate` job, so a
-        # credential-shaped string in a tracked file is caught by two
-        # independent checks before a merge.
-        if: github.event_name != 'pull_request'
+        # The only credential in this job is `GITHUB_TOKEN`, the workflow's
+        # own read-only token, which the action needs to read a pull request.
+        # No repository secret is reachable from a pull-request run: the
+        # gitleaks licence is not needed for a personal repository, and an
+        # organisation that forks this repository adds the licence to the
+        # trusted path only.
+        #
+        # The validator's own `secrets` rule runs in the `validate` job and
+        # scans every tracked file, so a credential-shaped string in the tree
+        # is caught by two independent checks before a merge.
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
-        with:
-          args: "--redact --verbose --no-banner"
         env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
-          GITLEAKS_ENABLE_COMMENTS: "false"
-          GITLEAKS_ENABLE_SUMMARY: "true"
-
-      - name: Scan the git history (pull request, no secret)
-        # The same detector, the same arguments, and no secret in the
-        # environment. A pull request from a fork has no secrets available
-        # anyway; a pull request from a branch in this repository would, so
-        # the step exists separately rather than as a conditional secret.
-        if: github.event_name == 'pull_request'
-        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
-        with:
-          args: "--redact --verbose --no-banner"
-        env:
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
-          GITLEAKS_ENABLE_COMMENTS: "false"
-          GITLEAKS_ENABLE_SUMMARY: "true"
-
-      - name: Scan the working tree
-        # The history scan reads committed objects. This step reads the files
-        # that are on disk right now, so a secret that was never committed but
-        # sits in a generated or ignored file is still reported. It runs on a
-        # push, where the detector scans the tree; on a pull request the
-        # action already scans the staged diff instead.
-        if: github.event_name != 'pull_request'
-        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
-        with:
-          args: "--no-git --redact --verbose --no-banner"
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
           GITLEAKS_ENABLE_COMMENTS: "false"
           GITLEAKS_ENABLE_SUMMARY: "true"

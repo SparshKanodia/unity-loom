@@ -13,11 +13,26 @@
 # network flake can never hide a real failure. The two jobs that do use the
 # network (secrets, editor-tests) are the two that are allowed to be slow.
 #
-# Every action is pinned to a major tag on the Node 24 runtime line:
-# actions/checkout@v7, actions/setup-node@v7, actions/upload-artifact@v7,
-# gitleaks/gitleaks-action@v3, softprops/action-gh-release@v3 and
-# game-ci/unity-test-runner@v4. The Node 20 line is deprecated on the
-# runners, so the older majors would have been forced onto Node 24 anyway.
+# Every action is pinned to a full commit SHA, with the human-readable tag in
+# a trailing comment. A tag is a mutable pointer: whoever controls the tag can
+# repoint it at a new commit, and a mutable pointer is a remote code execution
+# path into this workflow. A SHA cannot move. The tags are checked by
+# `dependabot.yml`, so a pinned action still receives security updates; the
+# bump arrives as a pull request, reviewed like any other change.
+#
+#   actions/checkout                  3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+#   actions/setup-node                949feb2413d6458794dcd2491c4babbbce0c15c1  # v7
+#   actions/upload-artifact           cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
+#   gitleaks/gitleaks-action          e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e  # v3
+#   softprops/action-gh-release        5113cdc90fd4d541c801c55356214017bf5ae34b  # v3
+#   game-ci/unity-test-runner         32e57712352b500e17974b245a6dce9e11a73213  # v4
+#
+# Secrets are never exposed to code that came from a pull request. A pull
+# request can modify this repository's own tooling, and that tooling runs
+# during the pull request, so any secret reachable from a pull-request run is
+# a secret reachable from whoever opened it. The rules that need a secret run
+# on a push to `main` or on a manual dispatch, where the code is already
+# reviewed and merged.
 
 name: ci
 
@@ -53,6 +68,10 @@ on:
 
 # The workflow reads the repository and nothing else. The release job is the
 # only one that needs more, and it says so.
+#
+# `id-token` is never granted. It is the permission that lets a workflow mint
+# a token for a third-party service, so a workflow that does not need it must
+# not ask for it.
 permissions:
   contents: read
 
@@ -67,6 +86,8 @@ jobs:
     name: validate (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    permissions:
+      contents: read
     strategy:
       # One broken combination must not hide the state of the other five.
       fail-fast: false
@@ -75,10 +96,15 @@ jobs:
         node: ["20", "22", "24"]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The token is not left in the checkout. Nothing in this workflow
+          # pushes, and a credential on disk is a credential a compromised
+          # build step can read.
+          persist-credentials: false
 
       - name: Set up Node ${{ matrix.node }}
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: ${{ matrix.node }}
 
@@ -97,7 +123,7 @@ jobs:
 
       - name: Upload the validation report
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: validate-report-${{ matrix.os }}-node${{ matrix.node }}
           path: validate-report.json
@@ -134,16 +160,20 @@ jobs:
     name: install (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node 22
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "22"
 
@@ -213,12 +243,16 @@ jobs:
     name: links
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node 22
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "22"
 
@@ -244,6 +278,7 @@ jobs:
             }
           };
           walk(root);
+
           const rel = (p) => relative(root, p).split(sep).join("/");
 
           let broken = 0;
@@ -280,45 +315,81 @@ jobs:
     name: secrets
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Check out the full history
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # The history scan needs every commit, not a shallow clone.
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Scan the git history
         # The action runs the gitleaks detector over the checked-out history
-        # and fails the job on a finding. It is pinned to a version tag; the
-        # maintainer may pin it to an exact release or to a commit digest.
-        # GITLEAKS_LICENSE is required by the action for an organisation
-        # repository and is optional for a personal one.
-        # v3 is the Node 24 line and keeps the v2 inputs, outputs and
-        # behaviour unchanged.
-        uses: gitleaks/gitleaks-action@v3
-        with:
-          args: "--redact --verbose --no-banner"
+        # and fails the job on a finding. It is pinned to a commit digest.
+        #
+        # gitleaks-action v3 takes no inputs: it always runs
+        # `gitleaks detect --redact`, so a finding is reported with the
+        # secret masked, and it scopes the scan to the event — the whole
+        # history on a push, the pull request's commits on a pull request.
+        #
+        # The only credential in this job is `GITHUB_TOKEN`, the workflow's
+        # own read-only token, which the action needs to read a pull request.
+        # No repository secret is reachable from a pull-request run: the
+        # gitleaks licence is not needed for a personal repository, and an
+        # organisation that forks this repository adds the licence to the
+        # trusted path only.
+        #
+        # The validator's own `secrets` rule runs in the `validate` job and
+        # scans every tracked file, so a credential-shaped string in the tree
+        # is caught by two independent checks before a merge.
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
           GITLEAKS_ENABLE_COMMENTS: "false"
           GITLEAKS_ENABLE_SUMMARY: "true"
 
-      - name: Scan the working tree
-        # The history scan reads committed objects. This step reads the files
-        # that are on disk right now, so a secret that was never committed but
-        # sits in a generated or ignored file is still reported. It runs on a
-        # push, where the detector scans the tree; on a pull request the
-        # action already scans the staged diff instead.
-        if: github.event_name != 'pull_request'
-        uses: gitleaks/gitleaks-action@v3
+  # ----------------------------------------------------------------- signature
+  signature:
+    name: signature
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only a push to `main`. This job is the enforcement that survives the
+    # administrator bypass: an administrator may merge without a review, so
+    # the commit that lands on `main` is checked here instead.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          args: "--no-git --redact --verbose --no-banner"
+          persist-credentials: false
+
+      - name: Verify the signature of the tip commit
+        # The branch protection requires signed commits, and GitHub accepts a
+        # signature only when it can verify it. A key that is registered for
+        # authentication but not as a signing key produces a signature
+        # GitHub reports as `unknown_key`, which does not satisfy the rule.
+        shell: bash
         env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
-          GITLEAKS_ENABLE_COMMENTS: "false"
-          GITLEAKS_ENABLE_SUMMARY: "true"
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          verification="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}" --jq '.commit.verification')"
+          verified="$(printf '%s' "$verification" | jq -r '.verified')"
+          reason="$(printf '%s' "$verification" | jq -r '.reason')"
+          signer="$(printf '%s' "$verification" | jq -r '.signature | if . == null then "none" else "present" end')"
+          if [ "$verified" != "true" ]; then
+            echo "The tip commit ${sha} is not signed with a verified signature." >&2
+            echo "  verification reason: ${reason}" >&2
+            echo "  signature: ${signer}" >&2
+            echo "Register the signing key on the account, or merge through a pull request." >&2
+            exit 1
+          fi
+          echo "The tip commit ${sha} carries a verified signature (${reason})."
 
   # -------------------------------------------------------------- editor-tests
   editor-tests:
@@ -328,15 +399,18 @@ jobs:
     # A pull request never runs this job, so a fork can never be blocked by a
     # job it has no Unity licence for. It runs on a manual dispatch only.
     if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
     env:
       # The secret is read into the job environment so that a missing licence
-      # is a skip, never a failure.
+      # is a skip, never a failure. A manual dispatch runs trusted code.
       UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           lfs: true
+          persist-credentials: false
 
       - name: Report the licence state
         shell: bash
@@ -362,7 +436,7 @@ jobs:
 
       - name: Run the EditMode tests
         if: env.UNITY_LICENSE != '' && steps.project.outputs.found == 'true'
-        uses: game-ci/unity-test-runner@v4
+        uses: game-ci/unity-test-runner@32e57712352b500e17974b245a6dce9e11a73213 # v4
         with:
           projectPath: ${{ inputs.unity-project-path }}
           testMode: EditMode
@@ -376,7 +450,7 @@ jobs:
 
       - name: Run the PlayMode tests
         if: env.UNITY_LICENSE != '' && steps.project.outputs.found == 'true'
-        uses: game-ci/unity-test-runner@v4
+        uses: game-ci/unity-test-runner@32e57712352b500e17974b245a6dce9e11a73213 # v4
         with:
           projectPath: ${{ inputs.unity-project-path }}
           testMode: PlayMode
@@ -390,7 +464,7 @@ jobs:
 
       - name: Upload the test artefacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: unity-test-results
           path: artifacts/
@@ -406,12 +480,17 @@ jobs:
     permissions:
       # The release job is the only job that writes to the repository.
       contents: write
+      # The attestation step needs an OIDC token to sign the provenance
+      # statement. It is requested here and nowhere else in this workflow.
+      id-token: write
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node 22
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "22"
 
@@ -435,7 +514,7 @@ jobs:
           rm -rf dist
           mkdir -p dist
           cp -R skills workflows doctrine references docs tools dist/
-          for f in manifest.json AGENTS.md README.md GUIDE.md HARNESSES.md CONTRIBUTING.md LICENSE; do
+          for f in manifest.json AGENTS.md README.md GUIDE.md HARNESSES.md CONTRIBUTING.md CONTRIBUTORS.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md LICENSE; do
             if [ -f "$f" ]; then
               cp "$f" dist/
             else
@@ -447,8 +526,18 @@ jobs:
           cd ..
           ls -l "unity-loom-$GITHUB_REF_NAME.zip"
 
+      - name: Attest the release archive
+        # The attestation says who built this archive, from which commit, and
+        # under which workflow. A consumer that verifies the attestation can
+        # tell the published artefact from one that was substituted after the
+        # fact. The `id-token` permission is requested here and nowhere else,
+        # and only in the job that signs.
+        uses: actions/attest-build-provenance@8beda2b7ed98355c0e97c0a63bec38ae472e66c4 # v4
+        with:
+          subject-path: "unity-loom-${{ github.ref_name }}.zip"
+
       - name: Publish the release asset
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@5113cdc90fd4d541c801c55356214017bf5ae34b # v3
         with:
           files: unity-loom-${{ github.ref_name }}.zip
           generate_release_notes: true

@@ -32,6 +32,8 @@ whitespace sweep is a separate pull request.
       another file.
 - [ ] `manifest.json` lists every file added here, and every path it lists
       exists on disk.
+- [ ] Every commit is signed off (`git commit -s`), as the
+      [DCO](../CONTRIBUTING.md#dco-sign-off) requires.
 
 ## Scope
 

@@ -8,6 +8,12 @@ of near-duplicates.
 This guide is written for a stranger. Follow it in order and you will not need
 to ask anything.
 
+Everyone is welcome here, and so are the ground rules:
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) says how we treat each other, and
+[SECURITY.md](SECURITY.md) says how to report a security problem instead of
+opening an issue about it. The [roadmap](ROADMAP.md) says what the project
+intends to build next.
+
 ## What this repository is
 
 | Layer | What it holds |
@@ -57,6 +63,11 @@ the proposal has to say which existing skill it replaces or merges with.
 
 If any of the four is missing, the content belongs in `references/`. That is
 the intended outcome, not a rejection (ADR-0015).
+
+Proposals start as an issue: use the **skill proposal** form in
+`.github/ISSUE_TEMPLATE/skill-proposal.yml`, which asks for exactly these
+four things plus the budget statement. A proposal that answers the form is
+usually close to a mergeable pull request.
 
 The steps, in order:
 
@@ -167,6 +178,47 @@ CI runs the same commands on Linux, macOS and Windows against Node 20, 22 and
 - [ ] `manifest.json` lists every file you added, and every path it lists
       exists.
 
+## DCO sign-off
+
+Every commit is signed off, so that the record says you wrote it and that
+you have the right to contribute it. It is the Developer Certificate of
+Origin, and it is one command:
+
+```bash
+git commit -s -m "your message"
+```
+
+`git config commit.gpgsign true` turns it on for every commit from then on.
+The sign-off line is the last line of the commit message and looks like this:
+
+```
+Signed-off-by: Your Name <you@example.com>
+```
+
+A pull request with commits that are not signed off is fine as a draft, and
+it will be asked for before it merges. There is no CLA and no paperwork: the
+sign-off is the whole legal layer.
+
+## How a pull request is reviewed
+
+`main` is protected, and the protection is enforced for the maintainer too.
+A pull request therefore has to clear all of this before it can merge:
+
+| Requirement | What it means for you |
+|---|---|
+| A pull request, not a push | Open a branch, push it, open a pull request. The maintainer does the same for their own changes. |
+| One approval from a code owner | The maintainer reviews it. Approval is a real review, not a rubber stamp. |
+| Stale approvals are dismissed | A new push restarts the review, so the approval always covers the code that is merging. |
+| Four required checks | `validate`, `install`, `links` and `secrets` must be green. They run on every pull request, on three operating systems and three Node versions. |
+| The branch is up to date | Merge or rebase onto `main` first. |
+| Linear history | The branch is squash-merged, so the history stays one commit per change. |
+| Signed commits | The squash commit is signed by GitHub. If you push to `main` yourself, sign your commit. |
+| Conversation resolved | Every review comment is answered or dismissed. |
+
+No secret is ever exposed to a pull request, so a pull request that modifies
+the CI cannot read anything. The full threat model is in
+[docs/09-security-model.md](docs/09-security-model.md).
+
 ## The growth protocol
 
 The repository is capped. A cap is a guard against fluff, not a quota on useful
@@ -189,3 +241,10 @@ Open an issue with the bug report or the feature request form in
 `.github/ISSUE_TEMPLATE`. For a disagreement about a default, open an issue
 first and propose the ADR with it, so the decision is discussed before it is
 written.
+
+For a security problem, do not open an issue: use the private channel in
+[SECURITY.md](SECURITY.md).
+
+Once your work is merged, it appears in the roster in
+[CONTRIBUTORS.md](CONTRIBUTORS.md), which is generated from the commit
+history and refreshed by a scheduled workflow.

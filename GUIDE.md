@@ -77,6 +77,10 @@ One line per file. Open a file when the column on the right matches the task.
 | [GUIDE.md](GUIDE.md) | this file: the recurring answers and the file index | first, and again by section |
 | [HARNESSES.md](HARNESSES.md) | the install matrix, one row per harness | installing, or a skill does not load |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | how to contribute a change here | before editing this repository |
+| [CONTRIBUTORS.md](CONTRIBUTORS.md) | the contributor roster and how to be listed | a credit or an attribution question |
+| [SECURITY.md](SECURITY.md) | the reporting channel and the controls in force | a vulnerability or a security question |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | how people are expected to behave here | a conduct question |
+| [ROADMAP.md](ROADMAP.md) | the phases ahead and the things that will not be built | a "what is next" question |
 | [manifest.json](manifest.json) | the machine catalogue: skills, triggers, budgets, adapters | the question is about the catalogue or a trigger |
 | [LICENSE](LICENSE) | the CC0-1.0 dedication of this repository | a licence question is asked |
 | [skills/unity-loom/SKILL.md](skills/unity-loom/SKILL.md) | the router: the routing table and the answer shape | every Unity request starts here |
@@ -121,6 +125,8 @@ One line per file. Open a file when the column on the right matches the task.
 | [docs/05-attribution.md](docs/05-attribution.md) | the narrative credit ledger | an attribution question |
 | [docs/06-context-budget.md](docs/06-context-budget.md) | what a budget is for, and the human copy of the numbers | a size limit is questioned |
 | [docs/07-workflow-template.md](docs/07-workflow-template.md) | the contract every workflow satisfies | a workflow is written or reviewed |
+| [docs/08-mcp-integration-plan.md](docs/08-mcp-integration-plan.md) | the generation layer: providers as data, the read-back contract | a voice, 3D, image or sound provider is discussed |
+| [docs/09-security-model.md](docs/09-security-model.md) | the threat model and the expected repository settings | a control or a setting is questioned |
 | [tools/validate.mjs](tools/validate.mjs) | the repository validator and its self-test | before every commit, and in CI |
 | [tools/install.mjs](tools/install.mjs) | the installer, plus doctor and verify | installing the skills |
 | [tools/perf-budget.mjs](tools/perf-budget.mjs) | compares a captured metrics file against a budget | a performance artefact exists |

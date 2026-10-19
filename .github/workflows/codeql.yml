@@ -1,0 +1,76 @@
+# Unity Loom code scanning.
+#
+# The repository is mostly Markdown, but two things in it execute: the Node
+# tooling under `tools/` and the GitHub Actions workflows under `.github/`.
+# Both are code, and both are attack surface:
+#
+#   tools/validate.mjs   runs on every pull request, on the runner, with the
+#                         repository token
+#   .github/workflows/   runs on every push, with the repository token, and
+#                         reaches the actions it references
+#
+# CodeQL analyses both: the JavaScript analysis reads `tools/*.mjs`, and the
+# `actions` analysis reads the workflow files and finds the injection points
+# in them. A finding fails the analysis job, and the analysis job is a
+# required status check, so an unsafe pattern cannot reach `main` unreviewed.
+#
+# The action is pinned to a full commit SHA. `dependabot.yml` watches the
+# `github-actions` ecosystem, so the pin still receives updates, as a pull
+# request.
+#
+#   github/codeql-action  f051dc808ef3645eb0d08647ec751634ec2304ac  # v4
+
+name: codeql
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # A weekly run catches a new query that flags code that was already
+    # merged, which a push-triggered run cannot see.
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # Required to upload the SARIF results to the code scanning dashboard.
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@f051dc808ef3645eb0d08647ec751634ec2304ac # v4
+        with:
+          language: ${{ matrix.language }}
+          # The extended suite costs a few extra minutes and finds the
+          # injection and path-traversal patterns that the default suite
+          # leaves out.
+          queries: security-extended
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@f051dc808ef3645eb0d08647ec751634ec2304ac # v4
+        with:
+          category: "/language:${{ matrix.language }}"

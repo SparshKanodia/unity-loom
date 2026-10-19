@@ -1,0 +1,52 @@
+# Dependency updates.
+#
+# The repository has no runtime dependencies: `tools/*.mjs` use only the Node
+# standard library, and the core corpus is Markdown. The dependencies that
+# exist are the GitHub Actions the workflows reference, and those are the
+# ones with the shortest fuse: a mutable action tag is remote code execution
+# inside the release pipeline.
+#
+# Dependabot opens a pull request when a pinned action moves to a new
+# release. Because the actions are pinned to commit SHAs, the pull request is
+# the only way a pin moves, which means the update is reviewed, validated and
+# merged like any other change instead of arriving silently.
+#
+# The groups below keep the noise low: one pull request for the routine
+# patch-level bumps of all the actions, instead of one per action.
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - security
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  # The `npm` ecosystem is configured but not enabled: the tooling has no
+  # `package.json` because it is dependency-free on purpose. When the
+  # repository gains one, add the block below and delete this comment.
+  #
+  # - package-ecosystem: npm
+  #   directory: "/"
+  #   schedule:
+  #     interval: weekly
+  #   open-pull-requests-limit: 5
+  #   labels:
+  #     - dependencies
+  #     - security

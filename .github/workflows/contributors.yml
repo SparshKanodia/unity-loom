@@ -1,0 +1,133 @@
+# Keep the contributor roster current.
+#
+# `CONTRIBUTORS.md` carries a table of everyone whose work is in the
+# repository. Hand-maintaining it means it is wrong within a month, so it is
+# generated: this workflow asks the GitHub API who the contributors are,
+# rewrites the table between the markers, and opens a pull request when the
+# table actually changed.
+#
+# It opens a pull request rather than pushing to `main` on purpose. The roster
+# is a claim about who did what, so it goes through the same review and the
+# same validator as everything else, and the branch ruleset applies to it.
+#
+# It never runs on a pull request. The workflow only reads public data and
+# writes one file, and it is scheduled rather than triggered by a change.
+
+name: contributors
+
+on:
+  schedule:
+    # Weekly, early in the week, so a merged contribution appears in the
+    # roster within days rather than months.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contributors
+  cancel-in-progress: false
+
+jobs:
+  roster:
+    name: roster
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # The workflow writes one file and opens a pull request. Nothing else.
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Read the contributor list
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/roster.mjs" <<'EOF'
+          import { writeFileSync, readFileSync } from "node:fs";
+
+          const token = process.env.GH_TOKEN;
+          const repo = process.env.GITHUB_REPOSITORY;
+          const headers = {
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "unity-loom-contributors",
+            Authorization: `Bearer ${token}`,
+          };
+
+          const res = await fetch(
+            `https://api.github.com/repos/${repo}/contributors?per_page=100&anon=0`,
+            { headers }
+          );
+          if (!res.ok) {
+            console.error(`the contributors API returned ${res.status}`);
+            process.exit(1);
+          }
+          const data = await res.json();
+          const rows = data
+            .filter((c) => c && c.login && c.type !== "Bot")
+            .map(
+              (c) =>
+                `| [@${c.login}](https://github.com/${c.login}) | ${c.contributions} |`
+            );
+
+          const table = [
+            "| Contributor | Contributions |",
+            "|---|---|",
+            ...rows,
+          ].join("\n");
+
+          const path = "CONTRIBUTORS.md";
+          const text = readFileSync(path, "utf8");
+          const begin = "<!-- BEGIN CONTRIBUTORS -->";
+          const end = "<!-- END CONTRIBUTORS -->";
+          const start = text.indexOf(begin);
+          const stop = text.indexOf(end);
+          if (start === -1 || stop === -1 || stop < start) {
+            console.error("the roster markers are missing or out of order");
+            process.exit(1);
+          }
+          const next =
+            text.slice(0, start + begin.length) + "\n" + table + "\n" + text.slice(stop);
+          if (next === text) {
+            console.log("the roster is already current");
+            process.exit(0);
+          }
+          writeFileSync(path, next);
+          console.log("the roster changed");
+          EOF
+          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+          GITHUB_REPOSITORY="${{ github.repository }}" \
+            node "$RUNNER_TEMP/roster.mjs"
+
+      - name: Open a pull request when the roster changed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # The step above rewrites the file in place. If the file is
+          # unchanged, there is nothing to propose, and the job ends here.
+          if git diff --quiet -- CONTRIBUTORS.md; then
+            echo "nothing to propose"
+            exit 0
+          fi
+
+          branch="chore/contributors-roster"
+          git config user.name "unity-loom-bot"
+          git config user.email "bot@unity-loom.local"
+          git checkout -B "$branch"
+          git add CONTRIBUTORS.md
+          git commit -m "chore: refresh the contributor roster"
+          git push --force-with-lease origin "$branch"
+
+          gh pr create \
+            --title "chore: refresh the contributor roster" \
+            --body "Automated roster refresh. The table is generated from the GitHub contributors API; the rest of this file is hand-written." \
+            --base "${GITHUB_REF_NAME:-main}" \
+            --head "$branch" \
+            || echo "the pull request already exists"

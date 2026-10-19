@@ -2,6 +2,11 @@
 
 **One fabric for Unity agent skills, workflows, and engineering doctrine.**
 
+[![License: CC0-1.0](https://img.shields.io/badge/License-CC0--1.0-lightgrey.svg)](LICENSE)
+[![CI](https://github.com/SparshKanodia/unity-loom/actions/workflows/ci.yml/badge.svg)](https://github.com/SparshKanodia/unity-loom/actions/workflows/ci.yml)
+[![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
+[![Skills](https://img.shields.io/badge/skills-10-blue.svg)](skills/)
+
 Unity Loom is a governed, markdown-only set of Agent Skills for Unity: one router
 skill, nine domain skills, nine gated workflows, and the doctrine that settles
 every disagreement between them. It needs no Unity CLI, no editor bridge and no
@@ -100,14 +105,14 @@ Node 20 or later. The installer has zero dependencies, makes no network call,
 and writes nothing outside the target directory it names. From a clone:
 
 ```bash
-git clone https://github.com/<org>/unity-loom.git
+git clone https://github.com/SparshKanodia/unity-loom.git
 cd unity-loom
 node tools/install.mjs plan    --target claude   # show what will be installed, and where
 node tools/install.mjs install --target claude   # write the 10 skills and the shared corpus
 node tools/install.mjs verify  --target claude   # prove the installed copy matches the repository
 ```
 
-Substitute your organisation for `<org>`. `plan` lists the destination, the
+`plan` lists the destination, the
 skills and the shared file count. `install` writes it. `verify` compares the
 installed copy with the repository and exits non-zero when anything is stale.
 
@@ -140,9 +145,9 @@ node tools/install.mjs install --target project              # .agents/skills in
 node tools/install.mjs install --target claude --scope project
 node tools/install.mjs install --target claude --skill unity-loom   # the router alone
 
-npx skills add <org>/unity-loom                      # every skill
-npx skills add <org>/unity-loom --skill unity-loom   # router only
-gh skill install <org>/unity-loom unity-loom --agent codex --scope user
+npx skills add SparshKanodia/unity-loom                      # every skill
+npx skills add SparshKanodia/unity-loom --skill unity-loom   # router only
+gh skill install SparshKanodia/unity-loom unity-loom --agent codex --scope user
 ```
 
 Use a project-local install when the skills belong to one repository and should
@@ -277,9 +282,12 @@ replaces or merges. Content that does not need a procedure belongs in
 
 ## Licence and attribution
 
-MIT — see [LICENSE](LICENSE). Upstream projects are referenced and credited,
-never copied: each is listed with its licence, the single idea taken from it
-and the part rejected, in [docs/05-attribution.md](docs/05-attribution.md) and
+CC0-1.0 Universal — see [LICENSE](LICENSE). Use it, copy it, modify it, publish
+it, distribute it, sublicense it or sell it, for any purpose, with no
+conditions and no attribution required. Upstream projects are referenced and
+credited as good practice, never copied: each is listed with its licence, the
+single idea taken from it and the part rejected, in
+[docs/05-attribution.md](docs/05-attribution.md) and
 [references/upstream.md](references/upstream.md).
 
 ## Limitations

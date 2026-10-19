@@ -17,7 +17,7 @@ referenced by URL only.
 
 ## Licence position
 
-- **This repository is MIT** (`LICENSE`). It ships our own text only.
+- **This repository is CC0-1.0** (`LICENSE`). It ships our own text only.
 - **Unity-Technologies repositories are not MIT.** `skills` and
   `unity-agent-plugin` are recorded as **Unity Companion License** in
   `manifest.json`. That licence is source-available, not an OSI open-source
@@ -28,7 +28,7 @@ referenced by URL only.
   exact licence name once the row is checked. No other phrase is used for the
   same state, anywhere in this repository.
 - A licence stated here is a statement about the upstream project, not about
-  this repository. This repository stays MIT.
+  this repository. This repository stays CC0-1.0.
 
 ## Credited upstreams
 

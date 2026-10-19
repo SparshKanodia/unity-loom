@@ -266,9 +266,9 @@ That writes `.agents/skills/` in the working directory, including the
 The ecosystem installers take a repository reference instead of a checkout:
 
 ```bash
-npx skills add <org>/unity-loom                 # every skill in the repository
-npx skills add <org>/unity-loom --skill unity-loom   # one skill
-gh skill install <org>/unity-loom unity-loom --agent codex --scope user
+npx skills add SparshKanodia/unity-loom                 # every skill in the repository
+npx skills add SparshKanodia/unity-loom --skill unity-loom   # one skill
+gh skill install SparshKanodia/unity-loom unity-loom --agent codex --scope user
 ```
 
 Two facts about the GitHub CLI installer matter. `gh skill install --agent

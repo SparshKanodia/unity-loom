@@ -9,7 +9,7 @@ review cadence.
 
 ## Licence position
 
-- **This repository is MIT** (`LICENSE`). It ships our own text only.
+- **This repository is CC0-1.0** (`LICENSE`). It ships our own text only.
 - **Unity-Technologies repositories are not MIT.** `skills` and
   `unity-agent-plugin` are recorded as **Unity Companion License** in
   `manifest.json`. The Unity Companion License is a source-available

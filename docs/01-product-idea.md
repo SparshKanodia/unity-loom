@@ -144,9 +144,9 @@ The fourth metric is deliberately not zero and not a target to minimise. An agen
 ## 9. Distribution
 
 ```bash
-npx skills add <org>/unity-loom                       # all skills
-npx skills add <org>/unity-loom --skill unity-loom    # router only
-gh skill install <org>/unity-loom unity-loom --agent codex --scope user
+npx skills add SparshKanodia/unity-loom                       # all skills
+npx skills add SparshKanodia/unity-loom --skill unity-loom    # router only
+gh skill install SparshKanodia/unity-loom unity-loom --agent codex --scope user
 ```
 
 From a clone, the built-in installer does the same for any harness, reading the catalogue from `manifest.json`:

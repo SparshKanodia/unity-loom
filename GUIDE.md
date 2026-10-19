@@ -78,7 +78,7 @@ One line per file. Open a file when the column on the right matches the task.
 | [HARNESSES.md](HARNESSES.md) | the install matrix, one row per harness | installing, or a skill does not load |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | how to contribute a change here | before editing this repository |
 | [manifest.json](manifest.json) | the machine catalogue: skills, triggers, budgets, adapters | the question is about the catalogue or a trigger |
-| [LICENSE](LICENSE) | the MIT licence of this repository | a licence question is asked |
+| [LICENSE](LICENSE) | the CC0-1.0 dedication of this repository | a licence question is asked |
 | [skills/unity-loom/SKILL.md](skills/unity-loom/SKILL.md) | the router: the routing table and the answer shape | every Unity request starts here |
 | [skills/loom-project/SKILL.md](skills/loom-project/SKILL.md) | project layout, architecture, data, save, netcode | a structure or architecture change |
 | [skills/loom-2d/SKILL.md](skills/loom-2d/SKILL.md) | sprites, tilemaps, 2D physics, 2D lighting | a 2D rendering or physics task |

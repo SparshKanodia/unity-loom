@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "entry": "skills/unity-loom/SKILL.md",
   "description": "One fabric for Unity agent skills, workflows, and engineering doctrine.",
+  "license": "CC0-1.0",
   "spec": "agent-skills",
   "budgets": {
     "router": { "lines": 140, "bytes": 8000 },

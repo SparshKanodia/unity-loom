@@ -17,7 +17,9 @@ referenced by URL only.
 
 ## Licence position
 
-- **This repository is CC0-1.0** (`LICENSE`). It ships our own text only.
+- **This repository is CC0-1.0** (`LICENSE`). It ships our own text only, and
+  it is dedicated to the public domain by Sparsh Kanodia and the Unity Loom
+  contributors, 2026.
 - **Unity-Technologies repositories are not MIT.** `skills` and
   `unity-agent-plugin` are recorded as **Unity Companion License** in
   `manifest.json`. That licence is source-available, not an OSI open-source

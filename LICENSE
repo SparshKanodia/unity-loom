@@ -1,11 +1,6 @@
+Creative Commons Legal Code
+
 CC0 1.0 Universal
-
-Dedicated to the public domain by Sparsh Kanodia and the Unity Loom
-contributors, 2026. Everyone is free to use, copy, modify, publish, distribute,
-sublicense and sell this work and any derivative of it, for any purpose, with
-no conditions and no attribution required.
-
-The full legal code follows.
 
     CREATIVE COMMONS CORPORATION IS NOT A LAW FIRM AND DOES NOT PROVIDE
     LEGAL SERVICES. DISTRIBUTION OF THIS DOCUMENT DOES NOT CREATE AN
@@ -124,10 +119,3 @@ express Statement of Purpose.
  d. Affirmer understands and acknowledges that Creative Commons is not a
     party to this document and has no duty or obligation with respect to
     this CC0 or use of the Work.
-
----
-
-Third-party projects referenced by this repository are credited in
-docs/05-attribution.md and references/upstream.md. No third-party source code
-or documentation text is included in this repository, so the dedication above
-covers only text written for Unity Loom.

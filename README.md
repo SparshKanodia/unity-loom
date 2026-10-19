@@ -282,9 +282,10 @@ replaces or merges. Content that does not need a procedure belongs in
 
 ## Licence and attribution
 
-CC0-1.0 Universal — see [LICENSE](LICENSE). Use it, copy it, modify it, publish
-it, distribute it, sublicense it or sell it, for any purpose, with no
-conditions and no attribution required. Upstream projects are referenced and
+CC0-1.0 Universal — see [LICENSE](LICENSE). Dedicated to the public domain by
+Sparsh Kanodia and the Unity Loom contributors, 2026. Use it, copy it, modify
+it, publish it, distribute it, sublicense it or sell it, for any purpose, with
+no conditions and no attribution required. Upstream projects are referenced and
 credited as good practice, never copied: each is listed with its licence, the
 single idea taken from it and the part rejected, in
 [docs/05-attribution.md](docs/05-attribution.md) and

@@ -41,14 +41,15 @@ Compliance checklist to keep with the release notes:
 
 | Suite | What it proves | Evidence to archive |
 |---|---|---|
-| EditMode | Logic, serialization, save migration | Test results file |
-| PlayMode | Scene load, physics, core loop | Test results file |
+| EditMode | Logic, serialization, save migration (C-050) | Test results file |
+| PlayMode | Scene load, physics, core loop (C-050) | Test results file |
 | Platform smoke | The store-profile build starts and plays | Device log |
 | Performance | The frame and memory budget holds | p95 numbers and artefacts |
 | XR matrix | Headset behaviour on every target model | Device log per model |
 | Long session | The build survives the promised session length | Session trace |
 
-- [ ] Invoke the tests per tier (ADR-0011): `unity test` at T1, otherwise the batchmode `-runTests` recipe.
+- [ ] Invoke the tests per tier (ADR-0011): `unity test` at T1 (C-054),
+      otherwise the batchmode `-runTests` recipe (C-144, C-145).
 - [ ] Platform smoke test on the target device: launch the store-profile build, reach the main menu, load a level, assert a clean log.
 - [ ] Run the performance gate from [performance.md](performance.md) and archive its artefacts.
 - [ ] Run the XR device matrix from [xr.md](xr.md) when the product ships to XR.
@@ -57,7 +58,8 @@ Compliance checklist to keep with the release notes:
 ## Phase 4 — Build
 
 - [ ] Run the pipeline for the store profile; the exact commands are in [loom-release](../skills/loom-release/SKILL.md).
-- [ ] Confirm the scripting backend and the managed stripping level match the reviewed settings.
+- [ ] Confirm the scripting backend and the managed stripping level match the reviewed settings (C-052, C-146).
+- [ ] Set `PlayerSettings.stripEngineCode` for the store profile (C-150), and keep every reflected type preserved (C-147).
 - [ ] Archive the symbol bundle beside the artifact and upload it to the crash reporter.
 - [ ] Name the artifact with the version and the build number, so two candidates never collide.
 - [ ] Compute the checksum: `sha256sum <artifact>`, or `shasum -a 256 <artifact>` on macOS.
@@ -79,12 +81,16 @@ sha256: 0000000000000000000000000000000000000000000000000000000000000000
 symbols: dist/symbols/Game-1.2.0+9f3c1a2b4d5e.417.symbols
 ```
 
+The manifest records the scripting backend (C-052) and the managed stripping level (C-146) chosen for the profile.
+
 ## Phase 5 — Store
 
 - [ ] Metadata: title, description, screenshots, promo video, changelog, version string.
 - [ ] Compliance and privacy declarations: the data-safety form and the privacy URL, consistent with the data review.
 - [ ] Age rating: complete the questionnaire with the content actually in the build.
-- [ ] Content and signing: the artifact is signed with the store profile; the signing identity never enters the repository.
+- [ ] Content and signing: the artifact is signed with the store profile
+      (on Android the signing key lives in a keystore, C-103); the
+      signing identity never enters the repository.
 - [ ] Submission: upload the artifact and the metadata through the pipeline, then send it for review.
 - [ ] Keep the submission receipt with the manifest and the checksum.
 - **Gate:** the listing, the declarations and the age rating are complete and consistent with the built version.

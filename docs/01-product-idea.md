@@ -102,7 +102,9 @@ unity-loom/
 | Broken internal links | 0 (CI) |
 | Fluff in shipped files | 0 (reviewed against the test in `docs/06-context-budget.md` §4) |
 | Total core context footprint (all router + domain SKILL.md) | within the budget in `docs/06-context-budget.md` |
-| Every claim cited | 100% |
+| Version-specific assertions in skills and workflows that carry a citation | 100% (reviewed) |
+| Registry rows cited by at least one artefact | ≥ 80% (a claim may be registered before it is needed) |
+| Registry rows whose source was fetched and read | 100% |
 | Secrets in tracked files | 0 (CI, redacted findings) |
 | Windows/macOS/Linux validator parity | 100% |
 

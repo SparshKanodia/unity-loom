@@ -126,8 +126,7 @@ A programmatic build invalidates editor variables that reference GameObjects (C-
 
 Opt-in build guard — inactive unless the active profile turns it on. Unity 6
 names the build callbacks `IPreprocessBuildWithContext` and
-`IPostprocessBuildWithContext` (C-143); the older `...WithReport` interfaces
-are the pre-Unity-6 names.
+`IPostprocessBuildWithContext` (C-143); this project uses only those two.
 ```csharp
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;

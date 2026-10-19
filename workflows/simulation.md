@@ -29,7 +29,7 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 
 | Standard | Use when | Statement transport |
 |---|---|---|
-| xAPI | statements go to a learning record store | a statement per event, queued |
+| xAPI | statements go to a learning record store (C-060) | a statement per event, queued |
 | SCORM | an LMS launches the content and tracks a score | one completion at the end |
 | Custom LMS API | a proprietary system owns the record | a custom payload per event |
 
@@ -41,8 +41,9 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
       ends the attempt, a failure elsewhere counts against the score.
 - [ ] Give every step a resume rule, so a client that joins late or
       reconnects lands in a defined state.
-- [ ] Keep the step data in an externalized asset, and build one
+- [ ] Keep the step data in an externalized asset (C-076), and build one
       instructor editing surface that lists and validates the graph.
+      Polymorphic step data is kept with `SerializeReference` (C-175).
 - **Gate:** a trainee can complete, fail and resume the procedure, the
   graph validation reports no orphan step, and a content change needs no
   code change.
@@ -76,8 +77,9 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 - [ ] Define the learner identity model: a local anonymous id, the
       mapping to the person and who owns it. Keep it server-side, so no
       personal data ships in the client.
-- [ ] Store the event log locally first, and flush it when the network
-      allows.
+- [ ] Store the event log locally first, under
+      `Application.persistentDataPath` (C-177), and flush it when the
+      network allows.
 - [ ] Implement the sync conflict rules below before the first sync, and
       persist the session state, so a crash, a device swap or a
       backgrounding resumes the procedure where it stopped.
@@ -101,7 +103,9 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 - [ ] Map every event of Phase 3 to one statement: the attempt events
       become initialized and terminated, the step events become
       experienced and completed or failed, and the action events become
-      performed or attempted with the error type as the result.
+      performed or attempted with the error type as the result. Actor,
+      verb and object are the required parts (C-104); the result and the
+      context are optional (C-155).
 - [ ] Send the statements as they happen, and mark them buffered while
       the network is down.
 - [ ] Decide what the reporting must answer and aggregate only that; the
@@ -114,12 +118,14 @@ Precondition: [foundation](foundation.md) is done; headset delivery also
 ## Phase 6 — Three-dimensional and CAD asset pipeline
 
 - [ ] Fix the unit and the axis convention for the project and write it
-      into the objective file; a CAD file in millimetres imported as
-      metres is a hundred-fold error.
+      into the objective file; set the import global scale explicitly
+      (C-119). A CAD file in millimetres imported as metres is a
+      hundred-fold error.
 - [ ] Convert the source assets with an offline transform: defeature,
-      decimate, and build the levels of detail.
-- [ ] Move the result into the project through Addressables (ADR-0001 in
-      [docs/03-decision-records.md](../docs/03-decision-records.md)).
+      decimate, and build the levels of detail (C-091).
+- [ ] Move the result into the project through Addressables (ADR-0001,
+      C-007); ADR-0001 is in
+      [docs/03-decision-records.md](../docs/03-decision-records.md).
 - [ ] Strip the data the scenario does not show, keep the physics mesh
       separate from the visual mesh, and write the transform so it is
       reproducible and versioned.

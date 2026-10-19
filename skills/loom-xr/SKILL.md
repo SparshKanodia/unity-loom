@@ -31,7 +31,7 @@ The five transitions, event names and resume procedure live once in
 
 | Decision | Choose per object class |
 |---|---|
-| Movement type | velocity-tracking (props), kinematic (tools), instantaneous (UI) |
+| Movement type | velocity-tracking (props), kinematic (tools), instantaneous (UI) (C-122, C-080) |
 | Feedback per event | hover: tint; select: tint + click + haptic; release: untint |
 | Destroy cleanup | drop listeners, unregister, never destroy while selected |
 
@@ -47,12 +47,12 @@ user's head; comfort is functional (C-027).
 ## SETUP CHECKLIST
 
 - **Packages** — pin the XR packages in `Packages/manifest.json`, commit the lock.
-- **OpenXR features** — an Editor script sets feature groups and interaction profiles via `OpenXRSettings`, then reads them back. The hand-tracking profile class name is version sensitive.
-- **AR provider plug-in** — enable the ARCore/ARKit/OpenXR loader per build target via the XR Plug-in Management API, then read it back.
+- **OpenXR features** — an Editor script sets feature groups and interaction profiles via `OpenXRSettings`, then reads them back (C-126, C-127). The hand-tracking profile class name is version sensitive.
+- **AR provider plug-in** — enable the ARCore/ARKit/OpenXR loader per build target via the XR Plug-in Management API, then read it back (C-024).
 - **Stereo path** — set the URP asset to single-pass instanced (C-020), read it back.
 - **Graphics API** — edit `ProjectSettings/ProjectSettings.asset` `m_BuildTargetGraphicsAPIs`: Vulkan first on standalone, GLES3 fallback.
 - **Textures** — ASTC mobile, BC desktop (C-043), set via `TextureImporter`.
-- **Hands** — enable hand tracking in the interaction profile, drive joints with `TrackedPoseDriver`; controllers alone still work.
+- **Hands** — enable hand tracking in the interaction profile (C-128), drive joints with `TrackedPoseDriver`; controllers alone still work.
 - **Gate** — the build boots to stereo and the log holds no XR validation error.
 
 ## PER-FRAME RULES FOR XR
@@ -60,7 +60,7 @@ user's head; comfort is functional (C-027).
 - Zero allocation in the update path: no LINQ, closures, string building.
 - No `Camera.main` per frame — cache the reference (C-002).
 - Cache `GetComponent` results in `Awake`/`OnEnable` (C-006).
-- Smooth with `Time.deltaTime`; `Time.unscaledDeltaTime` only where the timescale must not apply.
+- Smooth with `Time.deltaTime`; `Time.unscaledDeltaTime` only where the timescale must not apply (C-073).
 - Never `Instantiate` inside an interaction event; pool or prewarm.
 - Non-alloc physics queries only (C-004).
 - Frame budget: the project declares a target refresh rate; the budget is its reciprocal — 72 Hz gives about 13.9 ms, 90 Hz about 11.1 ms. Read it off the device profile.
@@ -123,13 +123,13 @@ public sealed class Echo : MonoBehaviour
 using Unity.Profiling;
 public sealed class Guard : MonoBehaviour
 {
-    static readonly ProfilerMarker M = new ProfilerMarker("XR.Frame");
+    static readonly ProfilerMarker M = new ProfilerMarker("XR.Frame");   // C-085
     [SerializeField] float budgetMs = 11.1f;   // project value, e.g. 90 Hz
     void Update()
     {
         using (M.Auto())
         {
-            float ms = Time.unscaledDeltaTime * 1000f;
+            float ms = Time.unscaledDeltaTime * 1000f;   // C-073
             if (ms > budgetMs)
                 Debug.LogWarning($"XR frame over budget: {ms:F2} ms");
         }
@@ -142,8 +142,8 @@ public sealed class Guard : MonoBehaviour
 // Usings: System.Collections.Generic, Unity.XR.ARFoundation, UnityEngine.XR.
 public sealed class Placer : MonoBehaviour
 {
-    [SerializeField] ARAnchorManager anchors;
-    [SerializeField] ARRaycastManager rays;   // confirm name
+    [SerializeField] ARAnchorManager anchors;   // C-131
+    [SerializeField] ARRaycastManager rays;   // trackables come from manager components (C-025)
     [SerializeField] GameObject prefab;
     [SerializeField] TrackableType types = TrackableType.PlaneWithinPolygon;
     readonly List<ARRaycastHit> hits = new();
@@ -157,6 +157,8 @@ public sealed class Placer : MonoBehaviour
     }
 }
 ```
+
+The AR session itself is owned by `ARSession` (C-084); its `state` reports the state of the whole AR system (C-129), and `ARCameraManager` owns the camera life cycle (C-130). Placed content stays anchored (C-026).
 
 ## Red lines
 

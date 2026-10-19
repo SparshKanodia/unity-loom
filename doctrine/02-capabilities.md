@@ -89,7 +89,7 @@ Fallback if the editor closes: T1 (unity CLI present)
 - A missing tier changes the *method*, never the goal.
 - If the fallback is missing too, emit a `HUMAN HANDOFF` with the command.
 - Never install a tool to raise your tier. Tiers are given, not made.
-- Report the downgrade and the evidence quality it costs; a downgrade is not a licence to guess.
+- Report the downgrade and the evidence quality it costs; it is no licence to guess.
 - No tier claim without the probe output that supports it.
 - A version claim needs a source in `references/claims.md`.
 - A tier is a *means*, not a goal: pick the lowest that suffices.

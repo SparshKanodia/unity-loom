@@ -117,7 +117,7 @@ Escape interpolated values; use a JSON serializer. The result and the context of
 ```csharp
 using System;
 using UnityEngine;
-// Pipeline: units → axes → metres, Y-up → scale → decimate → LOD → Addressables.
+// Pipeline: units → axes → metres, Y-up → scale → decimate → LOD → Addressables (C-007).
 public static class CadGate
 {
     public static bool ScaleMatches(Bounds b, double expected, double tol = 0.005) { double m = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z)); return Math.Abs(m - expected) / expected <= tol; }

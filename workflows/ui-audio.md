@@ -21,8 +21,8 @@ Precondition: [foundation](foundation.md) is done.
 
 ## Phase 1 — UI framework, theme and scale
 
-- [ ] Choose the UI system: UI Toolkit for menus, HUD and settings, uGUI
-      for a world-space overlay, and never both on one canvas. Record
+- [ ] Choose the UI system: UI Toolkit for menus, HUD and settings (C-093),
+      uGUI for a world-space overlay, and never both on one canvas. Record
       the reason in the decision file, and keep the view state in a view
       model: the view never computes game rules.
 - [ ] Create one panel settings asset holding the reference resolution,
@@ -44,7 +44,7 @@ Precondition: [foundation](foundation.md) is done.
 | Navigation | the input action map | actions drive navigation, never raw device events |
 | Safe area and cutouts | a single safe-area service | the interface reads insets, it never queries the device |
 | Glyphs and atlases | the text mesh provider | one dynamic atlas per font |
-| Master volume | the audio mixer | one exposed parameter, read by the mixer |
+| Master volume | the audio mixer | one exposed parameter, read by the mixer (C-137) |
 | Tracked pointer in a headset | the XR input module | see the dialect file for the world case |
 
 ## Phase 2 — Layout and assets
@@ -57,7 +57,8 @@ Precondition: [foundation](foundation.md) is done.
 - [ ] Set the import settings of each sprite class once and apply them
       to the folder: slice the nine-slices and the rounded shapes at
       import, so no runtime slicing is needed, and pack the interface
-      sprites into atlases with one atlas adjacent in the draw order.
+      sprites into atlases with one atlas adjacent in the draw order
+      (C-088).
 - [ ] Recycle the items of long lists; a thousand-row list must
       allocate only the visible rows.
 - **Gate:** the layout is clean at the smallest and the largest supported
@@ -70,12 +71,12 @@ Precondition: [foundation](foundation.md) is done.
 - [ ] Add the script coverage each target language needs; a missing
       glyph shows as a box and is a release blocker. A right-to-left
       language mirrors the layout from the language, not per screen.
-- [ ] Move every user-facing string into a string table; no literal
+- [ ] Move every user-facing string into a string table (C-156); no literal
       string reaches a label.
 - [ ] Run a pseudo-localization pass that expands every string and
       exposes clipping and missing layout space.
 - [ ] Use the set-text overloads for values that change every frame, so
-      no string is built per frame (C-045).
+      no string is built per frame (C-045, C-135).
 - **Gate:** every string resolves in every target language, the
   pseudo-localization pass shows no clipped text, and the profiler shows
   no per-frame string allocation.
@@ -84,11 +85,11 @@ Precondition: [foundation](foundation.md) is done.
 
 - [ ] Define the action asset: one action map per context, with a
       control scheme for keyboard and mouse, gamepad, touch and, when
-      relevant, a tracked device.
+      relevant, a tracked device (C-094).
 - [ ] Map every action to the schemes that can drive it; an action with
       no gamepad binding is a defect, not a preference.
 - [ ] Build the rebinding screen on the same action asset and save the
-      binding to the user profile as a serialized asset.
+      binding to the user profile as a serialized asset (C-140).
 - [ ] Give the interface an explicit focus order and a visible focus
       ring, and let the navigation actions move the focus. Keep the
       input consumption in one place, so a screen and the gameplay do
@@ -128,17 +129,19 @@ Precondition: [foundation](foundation.md) is done.
 ## Phase 6 — Audio graph
 
 - [ ] Create the mixer with the groups Master, Music, SFX, Voice and UI,
-      and route every source through a group. No source plays direct.
+      and route every source through a group. No source plays direct
+      (C-096).
 - [ ] Create the snapshots that change the mix: pause, dialogue, combat,
-      underwater and the menu state, each with its own values.
+      underwater and the menu state, each with its own values (C-096).
 - [ ] Implement the ducking from one group to another with a snapshot,
-      and record the depth and the release time in the decision file.
+      and record the depth and the release time in the decision file
+      (C-138).
 - [ ] Apply the 2D and 3D rules below to every source: the interface,
       the music and the repeated feedback stay 2D, the world effects,
-      the tools and the vehicles are 3D.
+      the tools and the vehicles are 3D (C-097).
 - [ ] Set the load type of every clip by class: stream the long ones,
       decompress the short ones on load, and cap the simultaneous voices
-      per group with pooled sources.
+      per group with pooled sources (C-139).
 - [ ] Mark the loop points of every music clip and fade at the loop
       seam; set the compression and the priority per clip class, so a
       burst of effects never clips.
@@ -155,6 +158,8 @@ Precondition: [foundation](foundation.md) is done.
 | Long effect | SFX | compressed in memory | 8 | pooled |
 | Short effect | SFX | decompress on load | 24 | pooled, per-class cap |
 | Interface | UI | decompress on load | 8 | never spatialized |
+
+The three load types in that table are the ones the importer offers: Decompress On Load, Compressed In Memory and Streaming (C-139).
 
 ## Phase 7 — Verification
 

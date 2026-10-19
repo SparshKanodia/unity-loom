@@ -57,21 +57,22 @@ budget:
 
 | Symptom | Measurement | Likely cause | Owner skill |
 |---|---|---|---|
-| Frame time high, GPU busy | GPU time against CPU time in the timeline | Fill rate, overdraw, shader cost | [loom-graphics](../skills/loom-graphics/SKILL.md) |
-| Frame time high, main thread busy | Main-thread marker breakdown | Per-frame allocation, searches, string work | [loom-project](../skills/loom-project/SKILL.md) |
-| Frame time high, render thread busy | Render-thread markers, draw-call count | Broken batching, material variants, too many draws | [loom-graphics](../skills/loom-graphics/SKILL.md) |
-| Regular GC spikes | Allocation column and GC spikes in the timeline | Allocation in update loops, LINQ, boxing, string building | [loom-project](../skills/loom-project/SKILL.md) |
-| Physics dominates | Physics module time, contact count | Layer matrix, complex colliders, sleep disabled | [loom-3d](../skills/loom-3d/SKILL.md) |
-| Animation dominates | Animation module time, culling state | Offscreen animators not culled, oversized parameter sets | [loom-3d](../skills/loom-3d/SKILL.md) |
-| UI dominates | UI rebuild markers and UI draw calls | Rebuilt canvas, per-frame text, immediate-mode UI | [loom-ui-audio](../skills/loom-ui-audio/SKILL.md) |
-| Memory grows during a session | Two snapshots, diffed | Leaked assets, unreleased handles, uncached instances | [loom-project](../skills/loom-project/SKILL.md) |
-| Slow start | Time to first frame on a cold launch | Synchronous asset load, shader compilation, blocking IO | [loom-project](../skills/loom-project/SKILL.md) |
+| Frame time high, GPU busy | GPU time against CPU time in the timeline | Fill rate, overdraw (C-012), shader cost | [loom-graphics](../skills/loom-graphics/SKILL.md) |
+| Frame time high, main thread busy | Main-thread marker breakdown | Per-frame allocation, searches (C-002, C-006, C-070), string work | [loom-project](../skills/loom-project/SKILL.md) |
+| Frame time high, render thread busy | Render-thread markers, draw-call count | Broken batching (C-010), material variants, too many draws | [loom-graphics](../skills/loom-graphics/SKILL.md) |
+| Regular GC spikes | Allocation column and GC spikes in the timeline | Allocation in update loops, LINQ, boxing, string building (C-045) | [loom-project](../skills/loom-project/SKILL.md) |
+| Physics dominates | Physics module time, contact count | Layer matrix, complex colliders, sleep disabled (C-042) | [loom-3d](../skills/loom-3d/SKILL.md) |
+| Animation dominates | Animation module time, culling state | Offscreen animators not culled (C-040), oversized parameter sets | [loom-3d](../skills/loom-3d/SKILL.md) |
+| UI dominates | UI rebuild markers and UI draw calls | Rebuilt canvas, per-frame text (C-045), immediate-mode UI | [loom-ui-audio](../skills/loom-ui-audio/SKILL.md) |
+| Memory grows during a session | Two snapshots, diffed | Leaked assets, unreleased handles (C-044), uncached instances | [loom-project](../skills/loom-project/SKILL.md) |
+| Slow start | Time to first frame on a cold launch | Synchronous asset load (C-007), shader compilation, blocking IO | [loom-project](../skills/loom-project/SKILL.md) |
 | Frame rate decays over time | Session trace plus device temperature | Thermal throttling, battery saver, background load | [loom-release](../skills/loom-release/SKILL.md) |
-| XR-only cost | Stereo render time, motion-to-photon | Multi-pass stereo, fill rate, reprojection off | [loom-xr](../skills/loom-xr/SKILL.md) |
-| Stutter on scene change | Frame-time spikes aligned with load events | Synchronous scene load, addressable unpack | [loom-project](../skills/loom-project/SKILL.md) |
+| XR-only cost | Stereo render time, motion-to-photon | Multi-pass stereo (C-020), fill rate (C-012), reprojection off | [loom-xr](../skills/loom-xr/SKILL.md) |
+| Stutter on scene change | Frame-time spikes aligned with load events | Synchronous scene load, addressable unpack (C-044) | [loom-project](../skills/loom-project/SKILL.md) |
 
 - [ ] Name one dominant cost in a sentence before touching any code.
 - [ ] If two causes are plausible, capture one measurement that separates them.
+- [ ] Prefer the non-alloc physics query forms in hot paths, and cache the property ids a shader needs (C-004, C-182, C-183).
 - **Gate:** the dominant cost is named, and the measurement that shows it is archived.
 
 ## Phase 2 — Fix, one change at a time
@@ -104,7 +105,7 @@ Change log (copy into the performance notes and fill it in):
 
 ## Phase 4 — Guard the regression
 
-- [ ] Choose the guard that will still run in six months: a test in the suite, a CI budget check, or a written manual check with a named owner.
+- [ ] Choose the guard that will still run in six months: a test in the suite (C-050), a CI budget check, or a written manual check with a named owner.
 - [ ] Keep the budget in a repository file next to the other release budgets, not in a chat message.
 - [ ] For a CI check, fail the job when the captured p95 is above the budget.
 - [ ] Wire the guard so it runs on the same schedule as the release pipeline.

@@ -31,18 +31,18 @@ Optimising by intuition is a red line: if the number did not move, it is a guess
 
 | Symptom | The one measurement that proves it | Tool |
 |---|---|---|
-| Script-bound | CPU main-thread time in one `Update`/`LateUpdate` | Profiler timeline, `ProfilerMarker` |
+| Script-bound | CPU main-thread time in one `Update`/`LateUpdate` | Profiler timeline, `ProfilerMarker` (C-085) |
 | Physics / animation-bound | `Physics.Simulate`, `FixedUpdate` and Animator time per frame | Profiler timeline, `Animator.cullingMode` (C-040) |
 | UI-bound | Canvas rebuild plus UI draw calls | Profiler, frame debugger |
-| GPU fill-rate | Overdraw (rendered pixels ÷ screen pixels) | RenderDoc / Xcode GPU capture |
+| GPU fill-rate | Overdraw (rendered pixels ÷ screen pixels) | RenderDoc / Xcode GPU capture (C-012) |
 | Draw-call-bound | `SetPass` and draw-call counts | Frame debugger (C-010) |
 | Geometry / bandwidth-bound | Triangles, batches, texture and buffer residency | Frame debugger, LODs, Memory Profiler |
-| Managed heap | `GC.Alloc` per frame, GC spikes | Profiler GC column, `ProfilerRecorder` |
+| Managed heap | `GC.Alloc` per frame, GC spikes | Profiler GC column, `ProfilerRecorder` (C-086) |
 | Native memory | Process RSS growth across two snapshots | Memory Profiler diff |
-| Startup-bound | Time to first scene, per-load hitch | Profiler, Addressables timings |
+| Startup-bound | Time to first scene, per-load hitch | Profiler, Addressables timings (C-007) |
 | Thermal-bound | Frame rate after 20+ min, battery, clocks | Device trace |
 
-A CPU-bound frame is not fixed by fewer draw calls, a GPU-bound frame not by removing a `GetComponent`.
+A CPU-bound frame is not fixed by fewer draw calls, a GPU-bound frame not by removing a `GetComponent` (C-006, C-010).
 
 ## BUDGET TABLE
 
@@ -66,14 +66,14 @@ Worked example: the floor device runs at 90 Hz, so the frame budget is 1000 ÷ 9
 using Unity.Profiling;
 public sealed class HotPath : MonoBehaviour
 {
-    static readonly ProfilerMarker M = new ProfilerMarker("Game.HotPath");
+    static readonly ProfilerMarker M = new ProfilerMarker("Game.HotPath");   // C-085
     void LateUpdate() { using (M.Auto()) { Work(); } }
     void Work() { }
 }
 ```
 
 ```csharp
-// Read a counter without the profiler UI. The name is version sensitive: confirm it.
+// Read a counter without the profiler UI. The name is version sensitive: confirm it (C-086).
 using Unity.Profiling;
 public sealed class GcWatch : MonoBehaviour
 {
@@ -120,10 +120,10 @@ public sealed class Pool : MonoBehaviour
 // Batch instead of instantiating a material per object.
 public sealed class PerObjectTint : MonoBehaviour
 {
-    static readonly int TintId = Shader.PropertyToID("_BaseColor");
+    static readonly int TintId = Shader.PropertyToID("_BaseColor");   // C-183
     [SerializeField] Renderer target;
     [SerializeField] Color color = Color.white;
-    MaterialPropertyBlock block;
+    MaterialPropertyBlock block;   // C-087
     void Awake() => block = new MaterialPropertyBlock();
     void LateUpdate()
     {
@@ -135,7 +135,7 @@ public sealed class PerObjectTint : MonoBehaviour
 ```
 
 ```csharp
-// Addressables instead of Resources: unloadable, and it bloats the build.
+// Addressables instead of Resources; the handle is released explicitly (C-007, C-044).
 public sealed class AssetLoader : MonoBehaviour
 {
     [SerializeField] AssetReferenceGameObject asset;
@@ -157,7 +157,7 @@ public sealed class FrameWatchdog : MonoBehaviour
     int count, index;
     void Update()
     {
-        samples[index] = Time.unscaledDeltaTime * 1000f;
+        samples[index] = Time.unscaledDeltaTime * 1000f;   // C-073
         index = (index + 1) % samples.Length;
         if (++count < samples.Length) return;
         var sorted = (float[])samples.Clone();
@@ -175,7 +175,7 @@ public sealed class FrameWatchdog : MonoBehaviour
 - No measuring in the editor and shipping to a device.
 - No change that alters gameplay behaviour without being flagged.
 - No per-frame allocation in a hot path.
-- No material instantiation in a loop.
+- No material instantiation in a loop (C-087).
 - No `Resources.UnloadUnusedAssets` in a hot path (C-044).
 - No generalising from one scene to the whole game.
 - No shipping an over-budget build silently.

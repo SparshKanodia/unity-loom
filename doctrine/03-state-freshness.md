@@ -1,80 +1,109 @@
 # Doctrine 03 — State Freshness
 
-An agent that acts on stale state produces a change nobody can reproduce: the file is correct and the Editor is not, the property is set and the object was replaced, the test passed against yesterday's scene. The gate below is what stands between "I edited a file" and "the project changed".
+Acting on stale Editor state is the most common way a correct-looking change goes wrong. Freshness is a gate: clear it or stop. See `doctrine/02-capabilities.md` for the tier rules and `references/adapters.md` for the bridge mechanics.
 
 ## 1. The loop
 
-Every action that touches the project goes through the same seven phases. Skip none.
+```text
+PROBE -> REFRESH -> COMPILE-WAIT -> READ -> ACT -> READ-BACK -> EVIDENCE
+```
 
-| # | Phase | What you do | What proves it |
-|---|---|---|---|
-| 1 | **PROBE** | is the editor alive, on which project, is it compiling? | the probe output |
-| 2 | **REFRESH** | make the editor notice the change on disk | the asset database version advanced |
-| 3 | **COMPILE-WAIT** | wait until no compilation is running | the compile state is idle and the error count is unchanged |
-| 4 | **READ** | read the exact state you intend to change | the value you read, before the change |
-| 5 | **ACT** | make one change | the action returned without an error |
-| 6 | **READ-BACK** | re-read the same value | it is the value you intended |
-| 7 | **EVIDENCE** | emit one observable artefact | a log line, a test result, a build artifact, a screenshot, or a file diff |
+| Phase | What it does | Done when |
+|---|---|---|
+| PROBE | is the editor alive, which project, is it compiling? | project path confirmed, editor idle |
+| REFRESH | make the editor pick up the change | refresh requested and finished |
+| COMPILE-WAIT | wait for scripts to compile | zero compile errors |
+| READ | read the exact state you intend to change | the value is in hand |
+| ACT | perform the change | the call returned |
+| READ-BACK | re-read the changed property | the new value is reported |
+| EVIDENCE | produce an observable artifact | log, test, screenshot, or artifact exists |
 
-Phase 6 is the one that is skipped. A write without a read-back is an assumption.
+Never skip READ-BACK. A silent write is a failed step.
 
-## 2. Never act while
+## 2. State probe
 
-- scripts are compiling, or a domain reload is in progress;
-- the asset database is still importing;
-- play mode is entering or leaving;
-- a modal dialog or a progress bar is up;
+Read these before acting. The middle column names the usual editor members; use whatever your bridge exposes. Confirm exact names against `references/claims.md` before relying on them.
+
+| What to read | Editor API | CLI equivalent |
+|---|---|---|
+| Open scene | active-scene accessor plus the editor's scene list | bridge scene query |
+| Unsaved changes | a dirty flag on the scene and on the asset | read-back shows a saved path |
+| Compiling | the editor's compiling/importing flags | build/test log compile markers |
+| Compile errors | console error entries for the project | log lines tagged as compile errors |
+| Asset database | `AssetDatabase` refresh/import state plus a version counter that changes on import | import pending flag |
+| Play mode | the editor's playing and play-mode-changed flags | bridge play-mode query |
+| Domain reload | a reload counter the bridge exposes; a rising counter means a reload ran | bridge reload counter |
+
+The middle column is indicative, not a guarantee: member names move between Unity versions.
+
+## 3. Never act while
+
+Stop and re-probe when any of these is true:
+
+- the editor is compiling or importing;
+- a domain reload is in flight or just finished;
+- play mode is entering, running, or exiting;
+- an asset import is pending;
+- a modal dialog or prompt is open in the editor;
 - the open scene has unsaved changes the user has not acknowledged;
-- the project you are about to touch is not the one the tool is attached to.
+- the bridge session is stale or answers for another project.
 
-Each of these invalidates the state you read. Wait, or downgrade to T0 and work on files.
-
-## 3. The state probe
-
-Read the smallest set that answers "is the state I am about to depend on still true?".
-
-| Question | Where to look |
-|---|---|
-| which project is open? | the adapter's session call, or the process the tool is attached to |
-| is it compiling? | the editor's compile state and the error count in the console |
-| is the asset database busy? | the refresh/import state after a file write |
-| is the scene modified? | the scene's dirty state |
-| did my last write land? | the file's content, re-read from disk |
-| did my last property write land? | the property, re-read through the typed API |
-
-Prefer the typed path: a serialized property read through the editor's own API, or the file re-read from disk. Reflection is a last resort and always needs a read-back ([ADR-0009](../docs/03-decision-records.md)).
+Waiting is the correct action. Guessing is not.
 
 ## 4. Read-back
 
-- Re-read **the same value you wrote**, in the same way you read it before.
-- Compare the value to what you intended, and report the difference if there is one.
-- A read-back that returns the previous value is a **failed step**: report it, do not retry a destructive action, and do not describe the change as done.
-- Record the read-back in the evidence line. "Set the intensity to 0.4" is a claim; "read-back: `_Intensity = 0.4`" is a proof.
+After every editor action, re-read the **exact property** you changed and report the value.
+
+```text
+Acted:     <the property changed>
+Read-back: <the value now, with the unit or path>
+Expected:  <the value you intended>
+Match:     yes | no
+```
+
+- A read-back that does not match is a failed step, not a warning.
+- Do not retry a MUTATE or DESTRUCTIVE action blindly; re-read and decide (see `doctrine/02-capabilities.md` §5).
+- Persist deliberately: bridge writes are often not auto-saved.
 
 ## 5. Evidence taxonomy
 
-A step is proven by exactly one of these. Pick the cheapest that fits.
+A step is proven by exactly one artifact. Pick the cheapest that actually fits.
 
-| Evidence | Proves | Produced by |
-|---|---|---|
-| log line | a runtime path executed | a `Debug.Log` in the code under test |
-| test result | behaviour matches a specification | a test run at T1 or T2 |
-| build artifact | the project compiles and packages | a build at T1/T2 |
-| screenshot | a visual state | a bridge capture, or a `HUMAN HANDOFF` |
-| file diff | a file changed as intended | reading the file back |
+| Change class | Proving evidence |
+|---|---|
+| Script or code | compile with zero errors, plus a passing test |
+| Logic or behaviour | a passing EditMode or PlayMode test |
+| Runtime value | a log line containing the expected value |
+| Visual or UI | a screenshot of the target |
+| Build output | a produced artifact and a clean build log |
+| Performance | a profiler or device capture with the target metric |
+| Project layout | a serialized file diff |
 
-Evidence is specific: a log line with the object id beats "it worked"; a test name beats "the tests pass". An evidence line that would be identical for a passing and a failing run is not evidence.
+Not evidence: "it should work", a tool exit code with no state read-back, or a self-reporting hook.
 
 ## 6. Concurrency
 
-- Read state immediately before acting, not earlier in the task.
-- Assume nothing about what happened while you were doing something else.
-- If the state changed underneath you — another editor, another agent, a recompile — re-read and re-decide.
-- Make one change at a time. A batch of changes cannot be read back one by one.
-- Never hold a reference across a domain reload; it is already gone.
+Another agent or a human may be editing the same project.
 
-## 7. When the gate cannot be cleared
+- Re-read the state immediately before acting; never act on a read from an earlier step.
+- Treat any state read more than one action ago as stale.
+- If the state changed underneath you, abort the action, re-read, and re-decide.
+- Never write a file another agent changed since your last read; re-read it first.
+- Prefer a separate branch or worktree per agent; state which one you used.
+- Report the project path in every reply, so a second agent knows whose tree it is in.
 
-If the state cannot be read, the editor is unresponsive, or the only way forward is a human action, emit a `HUMAN HANDOFF` block: **what** is needed, **why** it needs a human, the **exact steps**, and **how to verify** it afterwards. A handoff is a legitimate terminal step, not a failure ([doctrine/00-precedence.md](../doctrine/00-precedence.md)).
+## 7. Escalation
 
-Never guess a state. A guessed state produces a confident, wrong report — the most expensive failure in this system.
+When the gate cannot be cleared, do not guess. Emit a `HUMAN HANDOFF` block:
+
+```text
+HUMAN HANDOFF
+What:   <one line: the step that is blocked>
+Why:    <why an agent cannot clear the gate>
+Steps:  1) <exact command or editor action> 2) <exact command> 3) <...>
+Verify: <what the human should report back>
+```
+
+Block on: a compile error with no fix in scope, a modal dialog, a locked or read-only project, an unsaved scene the user must decide about, or an adapter that never answers.
+
+A handoff is a completed step when the human replies with the requested value.

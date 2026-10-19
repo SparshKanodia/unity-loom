@@ -34,7 +34,7 @@ Precondition: [foundation](foundation.md) is done and the pipeline is chosen.
       anti-aliasing, shadow distance (C-184), shadow count and texture
       quality on each level.
 - [ ] Implement each renderer feature as a code subclass and register it
-      in the renderer asset with a serialized-object editor script.
+      in the renderer asset with a serialized-object editor script (C-077).
 - [ ] Add the pipeline packages to `Packages/manifest.json` and commit
       `Packages/packages-lock.json` with it. Check the status of the
       Built-in path before assuming it is available (C-013).
@@ -65,16 +65,16 @@ Precondition: [foundation](foundation.md) is done and the pipeline is chosen.
       static fixture lit by a mover is mixed.
 - [ ] Set the bake configuration in
       `ProjectSettings/lightmapSettings.asset` and generate the lightmap
-      UVs for every mesh with an editor script.
+      UVs for every mesh with an editor script (C-107).
 - [ ] Run the bake from the CLI through an `-executeMethod` entry point
       and keep the bake log next to the scene. Mark static geometry as
       static so it enters the bake.
 - [ ] Cover the playable area with probe volume bounds and place probe
-      groups wherever a mover can leave that volume.
-- [ ] Set the shadow budget per tier: shadow distance, the number of
-      simultaneous casters and the resolution of each. Set the ambient
+      groups wherever a mover can leave that volume (C-108).
+- [ ] Set the shadow budget per tier: shadow distance (C-184), the number
+      of simultaneous casters and the resolution of each. Set the ambient
       mode and intensity per tier, and place one reflection probe per
-      zone with a bounded refresh mode.
+      zone with a bounded refresh mode (C-110).
 - **Gate:** the reference scene lights correctly, with no visible probe
   seam, no missing shadow and no unbaked static object in the log.
 
@@ -87,7 +87,7 @@ Precondition: [foundation](foundation.md) is done and the pipeline is chosen.
       the batcher keeps the material in one batch (C-010).
 - [ ] Enable instancing on the materials that repeat in the world and
       confirm the shader supports it (C-011).
-- [ ] Pass per-instance values through a material property block; a
+- [ ] Pass per-instance values through a material property block (C-087); a
       material instance per object breaks batching and allocates.
 - [ ] Set texture import overrides per platform group: color maps in
       sRGB, normal and mask maps linear, mipmaps on, and a compression
@@ -121,7 +121,7 @@ Precondition: [foundation](foundation.md) is done and the pipeline is chosen.
       objects per emission. Prewarm long-lived emitters so the first
       visible frame is not the heaviest one.
 - [ ] Avoid per-frame material or property changes; use a material
-      property block for colour and transform changes.
+      property block for colour and transform changes (C-087).
 - [ ] Move an emitter to a graph-based effect only when the count exceeds
       what a CPU emitter can afford; the graph costs GPU time and needs
       its own budget line.

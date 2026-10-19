@@ -25,12 +25,12 @@ the naming, the collider matrix and the lifecycle names.
 ### P2. Feature groups and interaction profiles
 
 - [ ] Enable the OpenXR loader per platform, the feature groups and the
-      interaction profile of every shipped controller.
+      interaction profile of every shipped controller (C-126, C-127, C-128).
 - **Gate:** no target device lacks a profile.
 
 ### P3. Rig assembly
 
-- [ ] Build one rig prefab: tracking space, camera offset, devices.
+- [ ] Build one rig prefab: tracking space, camera offset, devices (C-022).
 - [ ] Keep the rig, manager and actions in one assembly definition.
 - **Gate:** the rig validates and the build starts with it.
 
@@ -48,7 +48,7 @@ the naming, the collider matrix and the lifecycle names.
 
 ### P6. Comfort baseline
 
-- [ ] Teleport primary, snap turn, vignette on, smooth motion off.
+- [ ] Teleport primary, snap turn, vignette on, smooth motion off (C-027).
 - [ ] Never move the head or body; the world moves instead.
 - [ ] Menu: turn type, angle, vignette, height, recenter.
 - **Gate:** every comfort setting changes a behaviour.
@@ -58,20 +58,23 @@ the naming, the collider matrix and the lifecycle names.
 ### A1. Rig, interactors and the collider matrix
 
 - [ ] Add the interaction manager and an interactor set per hand.
-- [ ] Near-far for a hand that points and grabs, direct for a poke.
-- [ ] Apply the collider matrix in the dialect file; test it.
+- [ ] Near-far for a hand that points and grabs (C-079), direct for a poke (C-123), ray for a distant target (C-124).
+- [ ] Give every interactor its own interaction layer mask (C-081).
+- [ ] Apply the collider matrix in the dialect file; test it (C-023).
+- [ ] Add the XR UI input module and the tracked-device raycaster for in-headset screens (C-083, C-125).
 - **Gate:** the rig validates and the collider test passes.
 
 ### A2. Locomotion and comfort
 
-- [ ] Add teleport, snap turn and the vignette to the comfort menu.
+- [ ] Add teleport, snap turn and the vignette to the comfort menu (C-027, C-082).
 - [ ] Give the teleport area a surface, anchor and reticle.
 - **Gate:** the defaults match the comfort decision record.
 
 ### A3. Hands and input
 
-- [ ] Support controllers and hands where the device offers both.
+- [ ] Support controllers and hands where the device offers both (C-128).
 - [ ] Allow a mid-session source change and remapping.
+- [ ] After any Meta XR SDK upgrade, re-verify controller tracking on the device (C-029).
 - **Gate:** the remapping survives a restart.
 
 ### A4. Resume and focus
@@ -95,7 +98,7 @@ the naming, the collider matrix and the lifecycle names.
 |---|---|---|
 | Hover | the highlight changes and the optional haptic tick fires | a log line with the interactable id |
 | Select | the object is held and the feedback fires | a log line with the event name |
-| Hold | the object moves by the chosen behaviour | a log line with the hold mode |
+| Hold | the object moves by the chosen behaviour (C-080, C-122) | a log line with the hold mode |
 | Release | the object is free, the parenting is cleared and the throw setting applies | a log line with the release velocity |
 | Despawn | the references are dropped and the object is unregistered | no exception in the log |
 
@@ -109,7 +112,7 @@ the naming, the collider matrix and the lifecycle names.
 
 ### B1. Session and provider
 
-- [ ] Add the AR session, the rig and the camera manager.
+- [ ] Add the AR session, the rig and the camera manager (C-084, C-130).
 - [ ] Enable the provider plug-in per target platform (C-024).
 - [ ] Start on demand, stop in the background.
 - **Gate:** the feed renders and tracking initializes.
@@ -117,7 +120,7 @@ the naming, the collider matrix and the lifecycle names.
 ### B2. AR manager set
 
 - [ ] Add only the managers the scenario needs, from the table below;
-      every unused manager costs a tracking pass per frame.
+      every unused manager costs a tracking pass per frame (C-025).
 - [ ] Subscribe in start, unsubscribe in the teardown.
 - **Gate:** the scene lists exactly the needed managers, and no manager
   raises an event after teardown.
@@ -125,7 +128,7 @@ the naming, the collider matrix and the lifecycle names.
 | Manager | Add it when the scenario needs | Cost if unused |
 |---|---|---|
 | Plane tracking | placement on a real surface | a tracking pass per frame |
-| Anchor tracking | placed content must stay put | a tracking pass per frame |
+| Anchor tracking | placed content must stay put (C-131) | a tracking pass per frame |
 | Tracked image | a marker or a printed target | a frame capture per frame |
 | Face tracking | a face is a target | a face pass per frame |
 | Mesh tracking | occlusion by the real room | a mesh pass per frame |
@@ -134,7 +137,7 @@ the naming, the collider matrix and the lifecycle names.
 ### B3. Placement and anchoring
 
 - [ ] Raycast the allowed trackable type; show a matching reticle.
-- [ ] Place on a hit and attach an anchor (C-026).
+- [ ] Place on a hit and attach an anchor (C-026, C-131).
 - [ ] Hide the reticle when nothing is tracked; show the reason.
 - **Gate:** the content stays anchored while the device moves.
 
@@ -152,7 +155,7 @@ the naming, the collider matrix and the lifecycle names.
 
 | Symptom | Likely cause | Check first |
 |---|---|---|
-| Black screen | Session/camera not running, provider not enabled, permission denied | Session state, plug-in enabled, permissions, rig present |
+| Black screen | Session/camera not running, provider not enabled, permission denied | Session state (C-129), plug-in enabled, permissions, rig present |
 | Camera jitter | Multi-threaded rendering with the provider | Disable MT rendering or update the provider |
 | Image library fails to build | Reference images invalid or provider mismatch | Image settings, ARCore requires/optional flags |
 | Image tracking stops updating | Tracked-image manager lifecycle | Manager enabled, event subscription, provider version |
@@ -160,7 +163,7 @@ the naming, the collider matrix and the lifecycle names.
 | Occlusion stops far away | Depth range limit of the platform | Reduce reliance on far depth; use meshes near the user |
 | Build fails (Xcode/Play) | Signing, provider, API level, bundle format | API level, ARM64, IL2CPP, provider version |
 | Placement on a ghost surface | The plane trackable is still initializing | Wait for the plane to be classified |
-| Content drifts from its spot | The anchor was never attached or was lost | Anchor state, re-anchor on loss |
+| Content drifts from its spot | The anchor was never attached or was lost | Anchor state (C-131), re-anchor on loss |
 | Tracking stops after a call | The session resumed without a state check | Session state, re-initialize the session |
 
 ### B6. Device matrix
@@ -215,7 +218,7 @@ the naming, the collider matrix and the lifecycle names.
 - [ ] Share the room and anchor data; a late joiner gets the room and
       the anchors, not a replay.
 - [ ] Sync the tracked pose and the discrete events only, and keep the
-      session logic host-authoritative.
+      session logic host-authoritative (C-154).
 - **Gate:** two clients agree on the world.
 
 ### C5. Privacy gate

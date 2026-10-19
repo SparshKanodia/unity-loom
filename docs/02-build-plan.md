@@ -288,7 +288,11 @@ hides the state of the others; and pinned action versions.
 
 CI is **offline-first**: no network is needed to validate the content, so
 budgets and links cannot rot silently into a network flake (fixes F11/F12
-underpinning). A documentation-only change does not spend a runner at all.
+underpinning). The pipeline has no `paths-ignore` filter: a skill, a workflow
+and a doctrine file are markdown files, so filtering markdown out of the
+trigger would have kept the validator away from the files it exists to police,
+and would have skipped the release job on a tag that touched only a document.
+Every push and every pull request spends a runner.
 
 ## 11. Upstream sync strategy
 

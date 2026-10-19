@@ -15,24 +15,29 @@
 
 name: ci
 
+# There is no `paths-ignore` filter on this workflow, deliberately.
+#
+# Every file in this repository is contract-bearing, including the markdown:
+# a skill, a workflow and a doctrine file are `.md` files, and the validator
+# exists to police exactly those. Filtering `**/*.md` out of the trigger meant
+# a pull request that edited a skill never reached the validator, so trigger
+# drift, a budget overrun and a broken link could land unreviewed.
+#
+# A filter also applies to tag pushes. A `v*` tag on a commit that touched
+# only a document would have skipped the release job, and the version would
+# never have been published.
+#
+# The jobs are offline, dependency-free and finish in about a minute, so the
+# honest trade is a runner per push in exchange for a contract that is always
+# checked.
+
 on:
   push:
     branches:
       - "**"
     tags:
       - "v*"
-    # A documentation-only change cannot break the contracts, so it does not
-    # spend a runner. A version tag always carries the files the release job
-    # packages, so the tag path stays open.
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "LICENSE"
   pull_request:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "LICENSE"
   workflow_dispatch:
     inputs:
       unity-project-path:

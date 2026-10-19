@@ -56,10 +56,10 @@ listed in `docs/05-attribution.md` only. Link-only sources in
 
 | ID | Failure | Mitigation | Enforcing artifact | Observable evidence | Verify |
 |---|---|---|---|---|---|
-| F1 | transport unreliability | health check, idempotent retry, no assumed session | `doctrine/02-capabilities.md` [detection, probing]; `doctrine/03-state-freshness.md` [the gate] | the tier probe is stated before work | open the cited section |
-| F2 | stale editor state | refresh, compile, read, act, read back | `doctrine/03-state-freshness.md` [the gate, after acting] | compile reaches zero errors; read-back matches | open the cited section |
+| F1 | transport unreliability | health check, idempotent retry, no assumed session | `doctrine/02-capabilities.md` [detection, probing]; `doctrine/03-state-freshness.md` [the gate]; `references/adapters.md` [failure signatures, idempotency] | the tier probe is stated before work | open the cited section |
+| F2 | stale editor state | refresh, compile, read, act, read back | `doctrine/03-state-freshness.md` [the gate, after acting]; `references/adapters.md` [editor-bridge failure signatures] | compile reaches zero errors; read-back matches | open the cited section |
 | F3 | setup and install sprawl | one install path; generated manifests; CI link checks | `README.md`; `manifest.json`; `tools/validate.mjs` | the orphan check fails on any unlisted file | `node tools/validate.mjs` |
-| F4 | hard dependencies | zero-requirement core; optional adapters; downgrade | `doctrine/02-capabilities.md` [tiers]; `manifest.json` [adapters] | core skills work with a text editor alone | open the cited section |
+| F4 | hard dependencies | zero-requirement core; optional adapters; downgrade | `doctrine/02-capabilities.md` [tiers]; `references/adapters.md` [adapter map]; `manifest.json` [adapters] | core skills work with a text editor alone | open the cited section |
 | F5 | context bloat | filter, paginate, summarize, hard cap | `doctrine/04-responses.md` [output budget, paginate] | a summary is 30 lines; a list is 25 items | open the cited section |
 | F6 | frontmatter or YAML failure | single-line quoted description, 1024 characters or fewer | `tools/validate.mjs` [frontmatter rules] | an unquoted or long description fails the run | `node tools/validate.mjs` |
 | F7 | non-executable instructions | executable-only rule; `HUMAN HANDOFF` block | `doctrine/00-precedence.md` [executability] | the GUI-phrase scan finds no GUI step | `node tools/validate.mjs` |

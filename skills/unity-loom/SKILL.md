@@ -19,7 +19,7 @@ You are the single entry point. **Run the pre-flight, then route to exactly one 
 ## 1. Pre-flight (always, in order)
 
 1. **Safety** — [doctrine/01-safety.md](../../doctrine/01-safety.md). Risky action? Ask first, with blast radius.
-2. **Capability tier** — [doctrine/02-capabilities.md](../../doctrine/02-capabilities.md). Probe, state the tier, plan the fallback.
+2. **Capability tier** — [doctrine/02-capabilities.md](../../doctrine/02-capabilities.md) and [references/adapters.md](../../references/adapters.md). Probe, state the tier, plan the fallback.
 3. **State freshness** — [doctrine/03-state-freshness.md](../../doctrine/03-state-freshness.md). Refresh → compile → read before acting; read back after.
 4. **Output budget** — [doctrine/04-responses.md](../../doctrine/04-responses.md). Filter, paginate, summarize.
 5. **Non-invasiveness** — [doctrine/05-non-invasiveness.md](../../doctrine/05-non-invasiveness.md). No ambient side effects.
@@ -42,7 +42,7 @@ Match the request against the **Trigger** column (whole word, case-insensitive).
 
 Router-owned broad terms (never route on these alone): unity, my game, the project, unity editor, scene, prefab, gameobject, component, unity version, help with unity, build my unity app.
 
-Worked examples of every route: [references/examples.md](../../references/examples.md).
+Worked examples: [references/examples.md](../../references/examples.md).
 
 ## 3. When several match
 
@@ -60,8 +60,8 @@ Example: an XR frame-rate problem routes to **loom-performance** (measured budge
 
 - **Executable only.** No GUI-click instructions. If a human is required, emit a `HUMAN HANDOFF` block.
 - **One fact, one place.** Link doctrine and [references/claims.md](../../references/claims.md); never restate them.
-- **Evidence or silence.** No version-specific API claim without a source in the claim registry.
-- **Done means proven.** Every workflow ends at its "Done when" gate; a step is complete only with observable evidence.
+- **Evidence or silence.** No version-specific API claim without a registry source.
+- **Done means proven.** A step is complete only with the observable evidence its workflow's "Done when" gate names.
 
 ## 5. Answer shape
 

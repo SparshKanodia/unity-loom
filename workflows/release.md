@@ -158,6 +158,7 @@ A gate may be skipped only in writing: the waiver names the gate, the reason, th
 - The measured budget behind the performance gate → [loom-performance](../skills/loom-performance/SKILL.md).
 - Headset and store rules → [loom-xr](../skills/loom-xr/SKILL.md).
 - Training and personal-data privacy → [loom-simulation](../skills/loom-simulation/SKILL.md).
+- Deploying to a device, or a tool that answers but has not been health-checked → [references/adapters.md](../references/adapters.md).
 
 ## Done when
 

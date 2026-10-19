@@ -39,7 +39,7 @@ adb logcat -d -s Unity > artifacts/perf/<run>/capture/unity.log
 xcrun xctrace record --template 'Time Profiler' --device <device> --launch -- <app> --profile-duration 120s
 ```
 
-Without a device, the phases below degrade to instructions: emit the exact commands and hand the capture to a human, per [doctrine/02-capabilities.md](../doctrine/02-capabilities.md).
+Without a device, the phases below degrade to instructions: emit the exact commands and hand the capture to a human, per [doctrine/02-capabilities.md](../doctrine/02-capabilities.md). The device-tooling adapter — detection, health check, failure signatures and the idempotency rules for an install — is in [references/adapters.md](../references/adapters.md).
 
 Budget template, filled in once and stored in the repository:
 

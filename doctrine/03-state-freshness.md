@@ -1,6 +1,6 @@
 # Doctrine 03 — State Freshness
 
-Acting on stale Editor state is the most common way a correct-looking change goes wrong. Freshness is a gate: clear it or stop. See `doctrine/02-capabilities.md` for the tier rules and `references/adapters.md` for the bridge mechanics.
+Acting on stale Editor state is the most common way a correct-looking change goes wrong. Freshness is a gate: clear it or stop. See `doctrine/02-capabilities.md` for the tier rules and `references/adapters.md` for bridge mechanics.
 
 ## 1. The loop
 
@@ -22,19 +22,19 @@ Never skip READ-BACK. A silent write is a failed step.
 
 ## 2. State probe
 
-Read these before acting. The middle column names the usual editor members; use whatever your bridge exposes. Confirm exact names against `references/claims.md` before relying on them.
+Read these before acting. Use whatever your bridge exposes; the middle column lists the usual editor members.
 
 | What to read | Editor API | CLI equivalent |
 |---|---|---|
-| Open scene | active-scene accessor plus the editor's scene list | bridge scene query |
-| Unsaved changes | a dirty flag on the scene and on the asset | read-back shows a saved path |
-| Compiling | the editor's compiling/importing flags | build/test log compile markers |
+| Open scene | `SceneManager.GetActiveScene()` plus the editor scene list | bridge scene query |
+| Unsaved changes | scene `isDirty`, `EditorUtility.IsDirty` on the asset | read-back shows a saved path |
+| Compiling | `EditorApplication.isCompiling`, `isUpdating` | build/test log compile markers |
 | Compile errors | console error entries for the project | log lines tagged as compile errors |
-| Asset database | `AssetDatabase` refresh/import state plus a version counter that changes on import | import pending flag |
-| Play mode | the editor's playing and play-mode-changed flags | bridge play-mode query |
+| Asset database | `AssetDatabase` refresh/import state plus its version counter | import pending flag |
+| Play mode | `EditorApplication.isPlaying`, `isPlayingOrWillChangePlaymode` | bridge play-mode query |
 | Domain reload | a reload counter the bridge exposes; a rising counter means a reload ran | bridge reload counter |
 
-The middle column is indicative, not a guarantee: member names move between Unity versions.
+Names are the common members; confirm them against `references/claims.md` for your pinned version.
 
 ## 3. Never act while
 
@@ -79,18 +79,18 @@ A step is proven by exactly one artifact. Pick the cheapest that actually fits.
 | Performance | a profiler or device capture with the target metric |
 | Project layout | a serialized file diff |
 
-Not evidence: "it should work", a tool exit code with no state read-back, or a self-reporting hook.
+Not evidence: "it should work", an exit code with no state read-back, or a self-reporting hook.
 
 ## 6. Concurrency
 
 Another agent or a human may be editing the same project.
 
-- Re-read the state immediately before acting; never act on a read from an earlier step.
+- Re-read the state immediately before acting; never act on an earlier read.
 - Treat any state read more than one action ago as stale.
-- If the state changed underneath you, abort the action, re-read, and re-decide.
+- If the state changed underneath you, abort, re-read, and re-decide.
 - Never write a file another agent changed since your last read; re-read it first.
 - Prefer a separate branch or worktree per agent; state which one you used.
-- Report the project path in every reply, so a second agent knows whose tree it is in.
+- Report the project path in every reply, so a second agent knows whose tree it is.
 
 ## 7. Escalation
 
@@ -104,6 +104,6 @@ Steps:  1) <exact command or editor action> 2) <exact command> 3) <...>
 Verify: <what the human should report back>
 ```
 
-Block on: a compile error with no fix in scope, a modal dialog, a locked or read-only project, an unsaved scene the user must decide about, or an adapter that never answers.
+Block on: a compile error with no fix in scope, a modal dialog, a locked project, an unsaved scene the user must decide about, or an adapter that never answers.
 
-A handoff is a completed step when the human replies with the requested value.
+A handoff is complete when the human replies with the requested value.

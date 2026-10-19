@@ -1,6 +1,6 @@
 # Adapter Guide
 
-Adapters are **optional**. They are detected, never required, and never installed by the agent. A missing adapter is a tier downgrade with a defined fallback, not a failure. The tier rules and the probe table live in [doctrine/02-capabilities.md](../doctrine/02-capabilities.md); this file is the practical detail.
+Adapters are **optional**. They are detected, never required, and never installed by the agent. A missing adapter is a tier downgrade with a defined fallback, not a failure. The tier rules and probe table live in [doctrine/02-capabilities.md](../doctrine/02-capabilities.md); this file is the practical detail.
 
 > **Naming.** Exact tool names, endpoints and argument shapes vary by bridge version and by vendor. Treat every name below as a *role*, and discover the real name at runtime from the bridge's own tool list. Never hard-code a tool name you have not just seen.
 
@@ -17,31 +17,35 @@ Two adapters can be present at once (a bridge *and* a device). Report the tier p
 
 ## 2. Unity CLI
 
-**Detect.** `unity --version` prints a version string. If it exits non-zero or the command is not on PATH, the CLI is absent. A version alone is not a project: it says the tool exists, not that a project is open.
+**Detect.** `unity --version` prints a version string. If it exits non-zero or the command is not on PATH, the CLI is absent. A version alone is not a project: it says the tool exists, not that a project is open. The CLI's own capabilities are recorded in `see C-054`.
 
-**Health check.** Run `unity --version`, then the CLI's status/session command to see whether an editor is already running and which project it holds. A version without a project is a CLI-only state: batch commands still work, live edits do not.
+**Health check.** Run `unity --version`, then the CLI's status/session command to see whether an editor is running and which project it holds. A version without a project is a CLI-only state: batch commands work, live edits do not.
 
 **Worked example — run the EditMode tests.**
 
-```text
+1. PROBE   unity --version                      -> 6000.3.x, editor running on <project>
+2. ACT     unity test --mode editmode           -> test run starts
+3. READ-BACK re-read the reported pass/fail counts and the failed test names
+4. EVIDENCE the run summary (counts + failure list) is the proof
+```
 1. PROBE   unity --version                      -> 6000.3.x, editor running on <project>
 2. ACT     unity test --mode editmode           -> test run starts
 3. READ-BACK re-read the reported pass/fail counts and the failed test names
 4. EVIDENCE the run summary (counts + failure list) is the proof
 ```
 
-A test run is idempotent (class READ for the run, CREATE for the report artifact): re-running it is safe; re-running it after a timeout is only safe if you first check whether a run is already in flight.
+A test run is idempotent (READ for the run, CREATE for the report artifact): re-running is safe, but after a timeout first check whether a run is already in flight.
 
 **Worked example — build a player for a target.**
 
 ```text
 1. PROBE   unity --version + status            -> version and project confirmed
-2. ACT     unity build --target <target>       -> build starts
+2. ACT     unity build (target from --help)     -> build starts
 3. READ-BACK re-read the build log tail for a clean finish
 4. EVIDENCE the produced artifact path plus a clean build log
 ```
 
-A build is CREATE (a new artifact). Re-running is safe, but the artifact path is what proves the step.
+A build is CREATE (a new artifact). Re-running is safe; the artifact path is what proves the step.
 
 **Known failure signatures.**
 
@@ -59,7 +63,7 @@ A build is CREATE (a new artifact). Re-running is safe, but the artifact path is
 
 **Detect.** A bridge session answers a health or session call and returns a session id plus the project path. A bridge that is installed but not attached to a running editor is *not* a T2.
 
-**Health check.** Call the bridge's health/session role and confirm three things in one reply: the tool is alive, the session has a project path, and the project path is the one the task names. If the path differs, you are attached to the wrong project: downgrade to T1 or T0.
+**Health check.** Call the bridge's health/session role and confirm three things in one reply: the tool is alive, the session has a project path, and that path is the one the task names. If the path differs, you are attached to the wrong project: downgrade to T1 or T0.
 
 **Worked example — read the frame time of a scene.**
 
@@ -81,7 +85,7 @@ A build is CREATE (a new artifact). Re-running is safe, but the artifact path is
 5. EVIDENCE the saved asset diff (the serialized file changed)
 ```
 
-The write is MUTATE. It is only safely repeatable if the property is set to an absolute value; otherwise read it first and decide (see [doctrine/02-capabilities.md](../doctrine/02-capabilities.md) §5).
+The write is MUTATE. It is safely repeatable only if the property is set to an absolute value; otherwise read it first and decide (see [doctrine/02-capabilities.md](../doctrine/02-capabilities.md) §5).
 
 **Known failure signatures.**
 
@@ -99,7 +103,7 @@ The write is MUTATE. It is only safely repeatable if the property is set to an a
 
 **Detect.** The control endpoint answers a version/catalog call and returns a tool catalog plus the project root. A catalog without a project root is not a usable session.
 
-**Health check.** Request the catalog, then the session/project root. The catalog tells you which operations this build exposes; the tool surface is generated, so treat it as data, not as a fixed API.
+**Health check.** Request the catalog, then the session/project root. The catalog tells you which operations this build exposes; the surface is generated, so treat it as data, not a fixed API.
 
 **Worked example — capture a screenshot of the current view.**
 
@@ -111,7 +115,7 @@ The write is MUTATE. It is only safely repeatable if the property is set to an a
 5. EVIDENCE the image file at that path
 ```
 
-A capture is CREATE (a new file): it is safe to repeat, and repeating is preferred over a missing artifact.
+A capture is CREATE (a new file): safe to repeat, and repeating beats a missing artifact.
 
 **Known failure signatures.**
 
@@ -128,7 +132,7 @@ A capture is CREATE (a new file): it is safe to repeat, and repeating is preferr
 
 **Detect.** `adb devices` lists a device id with a `device` state, or `xcrun xctrace list devices` lists a simulator or device. An `unauthorized` or `offline` state means the device is not usable yet.
 
-**Health check.** List the devices and confirm one is in a usable state. Then confirm the tool can talk to it with a read-only command (for example a device log or process list).
+**Health check.** List the devices and confirm one is in a usable state. Then confirm the tool reaches it with a read-only command (a device log or process list).
 
 **Worked example — read the app log after a launch.**
 
@@ -214,6 +218,6 @@ editor-bridge: session <id> | project <path> | ok
 device      : <id> | state device | ok
 ```
 
-Keep it in the conversation, not in the project: a file written into the user's project is a side effect the user did not ask for (see [doctrine/05-non-invasiveness.md](../doctrine/05-non-invasiveness.md)).
+Keep it in the conversation, not in the project: a file written into the user's project is a side effect nobody asked for (see [doctrine/05-non-invasiveness.md](../doctrine/05-non-invasiveness.md)).
 
 If a record grows unbounded, stop recording and re-probe from scratch: a stale cache is worse than a fresh probe.
